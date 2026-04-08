@@ -35,6 +35,7 @@ export interface CreateRuntimeBranchInput {
 export interface ForkRuntimeBranchInput {
   id: string;
   title: string;
+  kind?: BranchRecord["kind"];
   category?: string;
   responsibility?: string;
   metadata?: Record<string, unknown>;
@@ -43,6 +44,7 @@ export interface ForkRuntimeBranchInput {
 export class LightningRuntime {
   private readonly store = new InMemoryBranchStore();
   private readonly adapters = new Map<string, LightningAdapter>();
+  private readonly threadHeads = new Map<string, string>();
 
   registerAdapter(adapter: LightningAdapter): void {
     this.adapters.set(adapter.id, adapter);
@@ -62,6 +64,24 @@ export class LightningRuntime {
 
   getMessages(branchId: string): MessageRecord[] {
     return this.store.getMessages(branchId);
+  }
+
+  getCheckpoint(checkpointId: string): BranchCheckpoint {
+    return this.store.getCheckpoint(checkpointId);
+  }
+
+  getThreadHead(threadId: string): string | undefined {
+    return this.threadHeads.get(threadId);
+  }
+
+  setThreadHead(threadId: string, checkpointId: string): void {
+    this.threadHeads.set(threadId, checkpointId);
+  }
+
+  async deleteBranch(branchId: string): Promise<void> {
+    const branch = this.store.getBranch(branchId);
+    await this.requireAdapter(branch.backend).then((adapter) => adapter.deleteBranch(branchId));
+    this.store.deleteBranch(branchId);
   }
 
   async createBranch(input: CreateRuntimeBranchInput): Promise<BranchRecord> {
@@ -99,21 +119,13 @@ export class LightningRuntime {
 
   async generate(branchId: string, request: GenerateRequest = {}): Promise<GenerateResult> {
     const branch = this.store.getBranch(branchId);
-    return this.requireAdapter(branch.backend).then((adapter) =>
-      adapter.generate(branchId, {
-        ...request,
-        messages: request.messages ?? this.store.getMessages(branchId)
-      })
-    );
+    return this.requireAdapter(branch.backend).then((adapter) => adapter.generate(branchId, request));
   }
 
   async generateEphemeral(branchId: string, request: GenerateRequest = {}): Promise<GenerateResult> {
     const branch = this.store.getBranch(branchId);
     return this.requireAdapter(branch.backend).then((adapter) =>
-      adapter.generateEphemeral(branchId, {
-        ...request,
-        messages: request.messages ?? this.store.getMessages(branchId)
-      })
+      adapter.generateEphemeral(branchId, request)
     );
   }
 
@@ -133,6 +145,49 @@ export class LightningRuntime {
       summary,
       backendRef: backendCheckpoint.backendRef ?? backendCheckpoint.id
     });
+  }
+
+  async respondFromCheckpoint(
+    checkpointId: string,
+    requestMessage: AppendMessageInput,
+    request: GenerateRequest = {},
+    options?: {
+      checkpointLabel?: string;
+      checkpointSummary?: string;
+      threadId?: string;
+    }
+  ): Promise<{
+    branch: BranchRecord;
+    generation: GenerateResult;
+    checkpoint: BranchCheckpoint;
+  }> {
+    const checkpoint = this.getCheckpoint(checkpointId);
+    const restoredBranch = await this.restoreBranch(checkpoint.branchId, checkpoint.id);
+
+    await this.appendMessages(restoredBranch.id, [requestMessage]);
+    const generation = await this.generate(restoredBranch.id, request);
+    await this.appendMessages(restoredBranch.id, [
+      {
+        role: "assistant",
+        content: generation.text
+      }
+    ]);
+
+    const nextCheckpoint = await this.checkpointBranch(
+      restoredBranch.id,
+      options?.checkpointLabel,
+      options?.checkpointSummary
+    );
+
+    if (options?.threadId) {
+      this.setThreadHead(options.threadId, nextCheckpoint.id);
+    }
+
+    return {
+      branch: this.getBranch(restoredBranch.id),
+      generation,
+      checkpoint: nextCheckpoint
+    };
   }
 
   async restoreBranch(branchId: string, checkpointId: string): Promise<BranchRecord> {

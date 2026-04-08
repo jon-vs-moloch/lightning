@@ -16,6 +16,7 @@ export interface CreateCheckpointInput {
 export interface ForkBranchInput {
   id: string;
   title: string;
+  kind?: BranchRecord["kind"];
   responsibility?: string;
   category?: string;
   metadata?: Record<string, unknown>;
@@ -62,6 +63,7 @@ export class InMemoryBranchStore {
       ...parentBranch,
       id: input.id,
       title: input.title,
+      kind: input.kind ?? parentBranch.kind,
       category: input.category ?? parentBranch.category,
       responsibility: input.responsibility ?? parentBranch.responsibility,
       parentId: parentBranch.id,
@@ -99,6 +101,15 @@ export class InMemoryBranchStore {
 
   getMessages(branchId: string): MessageRecord[] {
     return this.cloneMessages(this.requireState(branchId).messages);
+  }
+
+  getCheckpoint(checkpointId: string): BranchCheckpoint {
+    const snapshot = this.checkpoints.get(checkpointId);
+    if (!snapshot) {
+      throw new Error(`Unknown checkpoint: ${checkpointId}`);
+    }
+
+    return { ...snapshot.checkpoint };
   }
 
   appendMessages(branchId: string, messages: MessageRecord[]): BranchRecord {

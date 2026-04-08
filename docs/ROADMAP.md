@@ -50,6 +50,7 @@ Deliverables:
 - archive old branch
 - consult elder branch ephemerally
 - explicit parent/child/successor lineage
+- begin explicit checkpoint-head semantics instead of implicit transcript continuity
 
 ## Phase 4: Candle integration
 
@@ -77,3 +78,18 @@ Deliverables:
 - better checkpoint/cache economics
 - wider concurrency
 - real branch scheduling under load
+
+## Later Research Track
+
+Goal:
+- canonical replay from transcript to deterministic checkpoint
+
+Possible deliverables:
+- transcript-to-checkpoint reconstruction pipeline
+- fixed-parameter replay mode
+- canonical reasoning-trace synthesis
+- deterministic snapshot export/import
+
+Notes:
+- this is a deliberate reconstruction workflow, not normal conversation continuation
+- exact historical recovery is less important than producing a stable replayable checkpoint

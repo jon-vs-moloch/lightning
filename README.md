@@ -26,6 +26,8 @@ It currently provides:
 - backend adapter interfaces
 - a handoff document for continuing implementation
 - an in-memory runtime with a fake adapter demo
+- a `llama.cpp` HTTP adapter
+- a minimal Lightning API server
 
 It does not yet provide:
 - a working inference backend
@@ -70,3 +72,64 @@ This exercises the in-memory runtime by:
 - appending messages
 - generating through the fake adapter
 - checkpointing and thermal planning
+
+## API Mode
+
+`Lightning` can now sit in front of a running `llama.cpp` server and expose a persistent conversation API.
+
+Start `llama.cpp` first:
+
+```bash
+llama-server -m /absolute/path/to/model.gguf --port 8080
+```
+
+Then start Lightning:
+
+```bash
+LLAMA_CPP_BASE_URL=http://127.0.0.1:8080 \
+LIGHTNING_MODEL=/absolute/path/to/model.gguf \
+npm run serve
+```
+
+The Lightning API will listen on `http://127.0.0.1:8787` by default.
+
+### Persistent thread endpoint
+
+```bash
+curl -s http://127.0.0.1:8787/v1/threads/demo/messages \
+  -H 'content-type: application/json' \
+  -d '{
+    "message": {
+      "content": "What should I work on next?"
+    }
+  }'
+```
+
+This appends the user message to the stored thread, generates through `llama.cpp`, appends the assistant reply, and returns the updated stats.
+
+### OpenAI-compatible shim
+
+Lightning also exposes:
+
+```text
+POST /v1/chat/completions
+```
+
+Use `thread_id` to make the request persistent:
+
+```bash
+curl -s http://127.0.0.1:8787/v1/chat/completions \
+  -H 'content-type: application/json' \
+  -d '{
+    "model": "/absolute/path/to/model.gguf",
+    "thread_id": "demo-thread",
+    "messages": [
+      { "role": "user", "content": "Hello" }
+    ]
+  }'
+```
+
+If the same `thread_id` is reused, Lightning deduplicates the already-stored prefix of the transcript and only appends the new suffix. That makes it possible to keep a mostly OpenAI-style client while shifting thread continuity into Lightning.
+
+One caveat:
+- branch continuity is persistent, but any future summarization or cache-compaction layer may be nondeterministic, so "continue this old conversation" can eventually mean replaying the same visible thread into a slightly different latent state representation.

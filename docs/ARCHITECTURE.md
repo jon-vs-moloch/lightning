@@ -81,6 +81,50 @@ A leaf can summarize locally to its parent, the parent can summarize to its pare
 
 This keeps each write local to the end of a branch's active tail.
 
+### Checkpoints over transcripts
+
+Lightning should treat a checkpoint as the primary runnable context object.
+
+The long-term runtime shape is:
+- request
+- model
+- context checkpoint
+- response
+
+not simply:
+- transcript/context
+- request
+- model
+- response
+
+A visible conversation transcript is only one possible serialization of state.
+It is useful for interoperability, but it is not the full runtime object.
+
+Checkpoint state may eventually include:
+- branch topology
+- summaries and compactions
+- thermal state
+- backend/cache lineage
+- latent state artifacts that are not faithfully represented by raw chat history
+
+### Canonical replay
+
+Lightning should eventually support deliberate reconstruction of a canonical context snapshot from a conversation transcript.
+
+This is not the same thing as ordinary continuation.
+It is a replay procedure whose job is to recover a deterministic, replayable checkpoint from visible conversation history.
+
+A likely future approach is:
+- replay the conversation
+- run a model with fixed parameters
+- ask it to generate a reasoning trace or intermediate state that would plausibly lead to the observed outputs
+- iterate until the reconstructed state is close enough to the organically-grown state to serve as a canonical snapshot
+
+The goal is not exact historical recovery.
+The goal is a deterministic checkpoint representation that can be replayed later and used as a stable continuity primitive.
+
+This should be treated as a future capability, not a Phase 1 requirement.
+
 ## Backend split
 
 Lightning should own:

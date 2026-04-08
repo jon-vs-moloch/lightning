@@ -30,6 +30,7 @@ async function main(): Promise<void> {
   const background = await runtime.forkBranch("chat-main", {
     id: "bg-main",
     title: "Background Lane",
+    kind: "background",
     category: "background",
     responsibility: "Longer-horizon supporting cognition"
   });

@@ -9,24 +9,66 @@ import type {
   MessageRecord
 } from "../core/types.js";
 
-interface FakeBranchState {
+export interface LlamaCppAdapterOptions {
+  baseUrl: string;
+  defaultModelRef?: string;
+  fetchImpl?: typeof fetch;
+}
+
+interface LlamaCppBranchState {
   branch: BranchRecord;
   messages: MessageRecord[];
   summaries: string[];
   frozen: boolean;
 }
 
-export class FakeAdapter implements LightningAdapter {
-  readonly id = "fake";
-  readonly label = "Fake in-memory adapter";
+interface LlamaCppCheckpointSnapshot {
+  checkpoint: BranchCheckpoint;
+  messages: MessageRecord[];
+  summaries: string[];
+  frozen: boolean;
+}
 
+interface LlamaCppChatCompletionResponse {
+  id?: string;
+  created?: number;
+  model?: string;
+  choices?: Array<{
+    index?: number;
+    finish_reason?: string;
+    message?: {
+      role?: string;
+      content?: string | null;
+    };
+    text?: string;
+  }>;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+  };
+}
+
+export class LlamaCppAdapter implements LightningAdapter {
+  readonly id = "llama.cpp";
+  readonly label = "llama.cpp HTTP adapter";
+
+  private readonly baseUrl: string;
+  private readonly defaultModelRef?: string;
+  private readonly fetchImpl: typeof fetch;
   private readonly loadedModels = new Set<string>();
-  private readonly branches = new Map<string, FakeBranchState>();
-  private readonly checkpoints = new Map<string, BranchCheckpoint>();
+  private readonly branches = new Map<string, LlamaCppBranchState>();
+  private readonly checkpoints = new Map<string, LlamaCppCheckpointSnapshot>();
+
+  constructor(options: LlamaCppAdapterOptions) {
+    this.baseUrl = options.baseUrl.replace(/\/+$/, "");
+    this.defaultModelRef = options.defaultModelRef;
+    this.fetchImpl = options.fetchImpl ?? fetch;
+  }
 
   capabilities(): AdapterCapabilities {
     return {
-      loadModel: "native",
+      loadModel: "emulated",
       checkpoint: "emulated",
       restore: "emulated",
       freeze: "emulated",
@@ -68,37 +110,17 @@ export class FakeAdapter implements LightningAdapter {
   }
 
   async appendSummary(branchId: string, summaryArtifact: string): Promise<void> {
-    const state = this.requireBranch(branchId);
-    state.summaries.push(summaryArtifact);
+    this.requireBranch(branchId).summaries.push(summaryArtifact);
   }
 
   async generate(branchId: string, request: GenerateRequest): Promise<GenerateResult> {
     const state = this.requireBranch(branchId);
-    const prompt = [...state.messages, ...(request.messages ?? [])];
-    const lastUserMessage = [...prompt].reverse().find((message) => message.role === "user");
-
-    return {
-      text: [
-        `branch:${branchId}`,
-        `model:${state.branch.modelRef}`,
-        lastUserMessage ? `echo:${lastUserMessage.content}` : "echo:no-user-message"
-      ].join(" | "),
-      stopReason: "end",
-      usage: {
-        promptTokens: prompt.reduce((count, message) => count + this.estimateContentTokens(message.content), 0),
-        completionTokens: 12,
-        totalTokens:
-          prompt.reduce((count, message) => count + this.estimateContentTokens(message.content), 0) + 12
-      },
-      metadata: {
-        frozen: state.frozen,
-        summaries: state.summaries.length
-      }
-    };
+    return this.generateFromMessages(state.branch, request.messages ?? state.messages, request);
   }
 
   async generateEphemeral(branchId: string, request: GenerateRequest): Promise<GenerateResult> {
-    const result = await this.generate(branchId, request);
+    const state = this.requireBranch(branchId);
+    const result = await this.generateFromMessages(state.branch, request.messages ?? state.messages, request);
     return {
       ...result,
       metadata: {
@@ -110,23 +132,36 @@ export class FakeAdapter implements LightningAdapter {
 
   async checkpointBranch(branchId: string, label?: string): Promise<BranchCheckpoint> {
     const state = this.requireBranch(branchId);
+    const checkpointId = `llama-cpp-${branchId}-${this.checkpoints.size + 1}`;
     const checkpoint: BranchCheckpoint = {
-      id: `fake-${branchId}-${this.checkpoints.size + 1}`,
+      id: checkpointId,
       branchId,
       createdAt: new Date().toISOString(),
       label,
       summary: state.summaries.at(-1),
-      backendRef: `fake-${branchId}-${this.checkpoints.size + 1}`
+      backendRef: checkpointId
     };
-    this.checkpoints.set(checkpoint.id, checkpoint);
+
+    this.checkpoints.set(checkpoint.id, {
+      checkpoint,
+      messages: state.messages.map((message) => this.cloneMessage(message)),
+      summaries: [...state.summaries],
+      frozen: state.frozen
+    });
+
     return { ...checkpoint };
   }
 
   async restoreBranch(branchId: string, checkpointRef: string): Promise<void> {
-    const checkpoint = this.checkpoints.get(checkpointRef);
-    if (!checkpoint || checkpoint.branchId !== branchId) {
-      throw new Error(`Unknown fake checkpoint for branch ${branchId}: ${checkpointRef}`);
+    const state = this.requireBranch(branchId);
+    const snapshot = this.checkpoints.get(checkpointRef);
+    if (!snapshot || snapshot.checkpoint.branchId !== branchId) {
+      throw new Error(`Unknown llama.cpp checkpoint for branch ${branchId}: ${checkpointRef}`);
     }
+
+    state.messages = snapshot.messages.map((message) => this.cloneMessage(message));
+    state.summaries = [...snapshot.summaries];
+    state.frozen = snapshot.frozen;
   }
 
   async freezeBranch(branchId: string): Promise<void> {
@@ -149,12 +184,13 @@ export class FakeAdapter implements LightningAdapter {
       promptTokens,
       cachedTokens: state.frozen ? 0 : promptTokens,
       checkpointCount: [...this.checkpoints.values()].filter(
-        (checkpoint) => checkpoint.branchId === branchId
+        (checkpoint) => checkpoint.checkpoint.branchId === branchId
       ).length,
       messageCount: state.messages.length,
       metadata: {
-        summaries: state.summaries.length,
-        frozen: state.frozen
+        baseUrl: this.baseUrl,
+        frozen: state.frozen,
+        summaries: state.summaries.length
       }
     };
   }
@@ -169,8 +205,8 @@ export class FakeAdapter implements LightningAdapter {
 
   async cacheStats(): Promise<Record<string, unknown>> {
     return {
-      loadedModels: this.loadedModels.size,
-      branches: this.branches.size
+      baseUrl: this.baseUrl,
+      loadedModels: [...this.loadedModels]
     };
   }
 
@@ -180,10 +216,55 @@ export class FakeAdapter implements LightningAdapter {
     };
   }
 
-  private requireBranch(branchId: string): FakeBranchState {
+  private async generateFromMessages(
+    branch: BranchRecord,
+    messages: MessageRecord[],
+    request: GenerateRequest
+  ): Promise<GenerateResult> {
+    const response = await this.fetchImpl(`${this.baseUrl}/v1/chat/completions`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        model: branch.modelRef || this.defaultModelRef,
+        messages: messages.map((message) => ({
+          role: message.role,
+          content: message.content
+        })),
+        temperature: request.temperature,
+        max_tokens: request.maxOutputTokens,
+        stream: false
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`llama.cpp request failed with ${response.status} ${response.statusText}`);
+    }
+
+    const payload = (await response.json()) as LlamaCppChatCompletionResponse;
+    const choice = payload.choices?.[0];
+    const text = choice?.message?.content ?? choice?.text ?? "";
+
+    return {
+      text,
+      stopReason: choice?.finish_reason,
+      usage: {
+        promptTokens: payload.usage?.prompt_tokens,
+        completionTokens: payload.usage?.completion_tokens,
+        totalTokens: payload.usage?.total_tokens
+      },
+      metadata: {
+        baseUrl: this.baseUrl,
+        model: payload.model ?? branch.modelRef
+      }
+    };
+  }
+
+  private requireBranch(branchId: string): LlamaCppBranchState {
     const state = this.branches.get(branchId);
     if (!state) {
-      throw new Error(`Unknown fake adapter branch: ${branchId}`);
+      throw new Error(`Unknown llama.cpp branch: ${branchId}`);
     }
 
     return state;

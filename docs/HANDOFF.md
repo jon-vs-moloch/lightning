@@ -70,3 +70,22 @@ Get to a point where Candle can ask Lightning to:
 - consult elder branches ephemerally
 
 Once that exists, Candle can be rebuilt against Lightning instead of growing more internal engine logic.
+
+## Additional Design Note
+
+Checkpoint identity should become the primary continuity abstraction.
+
+The desired runtime framing is:
+- request + checkpoint -> model -> response + next checkpoint
+
+not:
+- transcript/history + request -> model -> response
+
+Transcript-shaped inputs should still be supported for compatibility, but the intended flow is:
+- pin transcript-shaped input to a checkpoint on the Lightning side
+- continue from the checkpoint going forward
+
+Also note a future desired capability:
+- reconstruct a canonical, deterministic, replayable checkpoint from visible conversation history
+
+That canonical replay flow is explicitly future work and should be written down, but it does not need to be built in the current milestone.

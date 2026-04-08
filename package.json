@@ -6,9 +6,12 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
-    "demo": "npm run build && node --experimental-specifier-resolution=node dist/examples/in-memory-demo.js"
+    "demo": "npm run build && node --experimental-specifier-resolution=node dist/examples/in-memory-demo.js",
+    "serve": "npm run build && node dist/server.js",
+    "test": "npm run build && node --test dist/tests/*.js"
   },
   "devDependencies": {
+    "@types/node": "^25.5.2",
     "typescript": "^5.8.3"
   }
 }
