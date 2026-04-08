@@ -125,6 +125,52 @@ The goal is a deterministic checkpoint representation that can be replayed later
 
 This should be treated as a future capability, not a Phase 1 requirement.
 
+### Lightning-capable models
+
+Not every model that can answer prompts or even call tools will necessarily be suitable for Lightning.
+
+A model should be considered Lightning-capable if it can stably participate in:
+- checkpoint-based continuation
+- branch-aware state evolution
+- summarization and compaction without severe drift
+- recursive or multi-stage runtime flows without collapsing into loops or incoherence
+
+This is best understood as an operational capability, not necessarily a deliberately architected vendor feature.
+A model may simply either be capable of inhabiting the Lightning runtime or not.
+
+This suggests at least three different notions of compatibility:
+- backend-compatible: Lightning can run the model through an adapter
+- interface-compatible: the model can satisfy basic request/response and tool-use expectations
+- Lightning-capable: the model can reliably operate inside Lightning's checkpointed branch regime
+
+This should eventually become an evaluation concern, but it does not need a concrete implementation in the current milestone.
+
+## Product direction
+
+Lightning should eventually become an end-user product, not only a systems project for enthusiasts.
+
+The default user experience should aim for:
+- click-to-install local models
+- automatic hardware detection
+- automatic choice of sane runtime settings
+- advanced inference features enabled by default behind simple, marketable controls
+- minimal or zero required knowledge about language models, quantization, serving stacks, or decoding internals
+
+In other words:
+- a non-technical user should be able to get a local inference endpoint running with essentially no manual tuning
+- a power user should still be able to inspect, override, and customize the full stack when needed
+
+This means the architecture should preserve room for:
+- one-click model installation
+- hardware-aware backend selection
+- profile-based optimization presets
+- user-facing feature labels that hide low-level inference complexity
+- a "simple by default, deep when wanted" control surface
+
+Lightning should win on both:
+- raw runtime quality
+- approachability for people who do not think of themselves as AI or systems users
+
 ## Backend split
 
 Lightning should own:

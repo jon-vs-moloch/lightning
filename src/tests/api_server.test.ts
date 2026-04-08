@@ -172,3 +172,118 @@ test("checkpoint endpoint can continue from a saved checkpoint and advance a thr
     await harness.close();
   }
 });
+
+test("thread inspection returns branch state and current head checkpoint", async () => {
+  const harness = await startTestServer();
+
+  try {
+    const createResponse = await fetch(`${harness.baseUrl}/v1/threads/inspect-demo/messages`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        message: {
+          content: "Inspect this thread"
+        }
+      })
+    });
+
+    const created = (await createResponse.json()) as { headCheckpointId?: string };
+
+    const inspectResponse = await fetch(`${harness.baseUrl}/v1/threads/inspect-demo`);
+    const inspected = (await inspectResponse.json()) as {
+      headCheckpointId?: string;
+      recentMessages?: Array<{ content?: string }>;
+      branch?: { id?: string };
+    };
+
+    assert.equal(inspectResponse.status, 200);
+    assert.equal(inspected.branch?.id, "inspect-demo");
+    assert.equal(inspected.headCheckpointId, created.headCheckpointId);
+    assert.equal(inspected.recentMessages?.length, 2);
+  } finally {
+    await harness.close();
+  }
+});
+
+test("checkpoint inspection returns saved checkpoint state", async () => {
+  const harness = await startTestServer();
+
+  try {
+    const createResponse = await fetch(`${harness.baseUrl}/v1/threads/checkpoint-inspect/messages`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        message: {
+          content: "Checkpoint inspection"
+        }
+      })
+    });
+
+    const created = (await createResponse.json()) as { headCheckpointId?: string };
+    assert.ok(created.headCheckpointId);
+
+    const inspectResponse = await fetch(
+      `${harness.baseUrl}/v1/checkpoints/${created.headCheckpointId}`
+    );
+    const inspected = (await inspectResponse.json()) as {
+      checkpoint?: { id?: string };
+      branch?: { id?: string };
+      messageCount?: number;
+      threadId?: string;
+    };
+
+    assert.equal(inspectResponse.status, 200);
+    assert.equal(inspected.checkpoint?.id, created.headCheckpointId);
+    assert.equal(inspected.branch?.id, "checkpoint-inspect");
+    assert.equal(inspected.messageCount, 2);
+    assert.equal(inspected.threadId, "checkpoint-inspect");
+  } finally {
+    await harness.close();
+  }
+});
+
+test("thread pinning imports transcript state and sets a new head checkpoint", async () => {
+  const harness = await startTestServer();
+
+  try {
+    const response = await fetch(`${harness.baseUrl}/v1/threads/pin-demo/pin`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        messages: [
+          {
+            role: "system",
+            content: "You are a pinned conversation."
+          },
+          {
+            role: "user",
+            content: "Imported turn one."
+          },
+          {
+            role: "assistant",
+            content: "Imported answer one."
+          }
+        ]
+      })
+    });
+
+    const payload = (await response.json()) as {
+      headCheckpointId?: string;
+      recentMessages?: Array<{ content?: string }>;
+    };
+
+    assert.equal(response.status, 200);
+    assert.ok(payload.headCheckpointId);
+    assert.equal(harness.runtime.getThreadHead("pin-demo"), payload.headCheckpointId);
+    assert.equal(harness.runtime.getMessages("pin-demo").length, 3);
+    assert.equal(payload.recentMessages?.[2]?.content, "Imported answer one.");
+  } finally {
+    await harness.close();
+  }
+});

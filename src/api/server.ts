@@ -55,6 +55,21 @@ interface CheckpointRespondRequest {
   checkpoint_summary?: string;
 }
 
+interface ThreadPinRequest {
+  messages: Array<{
+    role: MessageRecord["role"];
+    content: string;
+    metadata?: Record<string, unknown>;
+  }>;
+  branch?: Partial<Pick<BranchRecord, "title" | "kind" | "category" | "responsibility">> & {
+    priority?: number;
+    metadata?: Record<string, unknown>;
+  };
+  model?: string;
+  checkpoint_label?: string;
+  checkpoint_summary?: string;
+}
+
 export function createLightningApiServer(options: LightningApiServerOptions) {
   const server = createServer(async (req, res) => {
     try {
@@ -93,6 +108,21 @@ async function routeRequest(
     return;
   }
 
+  if (method === "GET" && url.pathname.startsWith("/v1/threads/") && url.pathname.split("/").length === 4) {
+    const threadId = decodeURIComponent(url.pathname.split("/")[3] ?? "");
+    const payload = await handleThreadInspect(threadId, options);
+    writeJson(res, 200, payload);
+    return;
+  }
+
+  if (method === "POST" && url.pathname.startsWith("/v1/threads/") && url.pathname.endsWith("/pin")) {
+    const threadId = decodeURIComponent(url.pathname.split("/")[3] ?? "");
+    const body = (await readJson(req)) as ThreadPinRequest;
+    const payload = await handleThreadPin(threadId, body, options);
+    writeJson(res, 200, payload);
+    return;
+  }
+
   if (method === "POST" && url.pathname === "/v1/chat/completions") {
     const body = (await readJson(req)) as ChatCompletionsRequest;
     const payload = await handleChatCompletion(body, options);
@@ -104,6 +134,13 @@ async function routeRequest(
     const checkpointId = decodeURIComponent(url.pathname.split("/")[3] ?? "");
     const body = (await readJson(req)) as CheckpointRespondRequest;
     const payload = await handleCheckpointRespond(checkpointId, body, options);
+    writeJson(res, 200, payload);
+    return;
+  }
+
+  if (method === "GET" && url.pathname.startsWith("/v1/checkpoints/") && url.pathname.split("/").length === 4) {
+    const checkpointId = decodeURIComponent(url.pathname.split("/")[3] ?? "");
+    const payload = await handleCheckpointInspect(checkpointId, options);
     writeJson(res, 200, payload);
     return;
   }
@@ -251,6 +288,91 @@ async function handleCheckpointRespond(
     checkpoint: result.checkpoint,
     stats,
     branch: result.branch
+  };
+}
+
+async function handleThreadInspect(threadId: string, options: LightningApiServerOptions) {
+  const branch = options.runtime.getBranch(threadId);
+  const stats = await options.runtime.branchStats(threadId);
+  const messages = options.runtime.getMessages(threadId);
+  const headCheckpointId = options.runtime.getThreadHead(threadId);
+
+  return {
+    threadId,
+    headCheckpointId,
+    branch,
+    stats,
+    recentMessages: messages.slice(-20)
+  };
+}
+
+async function handleCheckpointInspect(checkpointId: string, options: LightningApiServerOptions) {
+  const snapshot = options.runtime.inspectCheckpoint(checkpointId);
+  const threadHead = options.runtime
+    .listThreadHeads()
+    .find((entry) => entry.checkpointId === checkpointId);
+
+  return {
+    checkpoint: snapshot.checkpoint,
+    branch: snapshot.branch,
+    messageCount: snapshot.messages.length,
+    recentMessages: snapshot.messages.slice(-20),
+    threadId: threadHead?.threadId
+  };
+}
+
+async function handleThreadPin(
+  threadId: string,
+  body: ThreadPinRequest,
+  options: LightningApiServerOptions
+) {
+  const modelRef = body.model ?? options.defaultModelRef;
+  const branchConfig = {
+    title: body.branch?.title ?? `Thread ${threadId}`,
+    kind: body.branch?.kind ?? "chat",
+    category: body.branch?.category ?? "conversation",
+    responsibility: body.branch?.responsibility ?? "Pinned compatibility transcript",
+    priority: body.branch?.priority,
+    metadata: body.branch?.metadata
+  };
+
+  const appendableMessages = body.messages.map((message) => ({
+    role: message.role,
+    content: message.content,
+    metadata: message.metadata
+  }));
+
+  try {
+    options.runtime.getBranch(threadId);
+  } catch {
+    await options.runtime.createBranch({
+      id: threadId,
+      title: branchConfig.title,
+      kind: branchConfig.kind,
+      category: branchConfig.category,
+      responsibility: branchConfig.responsibility,
+      backend: options.defaultBackend,
+      modelRef,
+      priority: branchConfig.priority,
+      metadata: branchConfig.metadata
+    });
+  }
+
+  await options.runtime.replaceBranchMessages(threadId, appendableMessages);
+  const checkpoint = await options.runtime.checkpointBranch(
+    threadId,
+    body.checkpoint_label ?? `pin-${Date.now()}`,
+    body.checkpoint_summary
+  );
+  options.runtime.setThreadHead(threadId, checkpoint.id);
+
+  return {
+    threadId,
+    headCheckpointId: checkpoint.id,
+    checkpoint,
+    branch: options.runtime.getBranch(threadId),
+    stats: await options.runtime.branchStats(threadId),
+    recentMessages: options.runtime.getMessages(threadId).slice(-20)
   };
 }
 

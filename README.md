@@ -75,15 +75,18 @@ This exercises the in-memory runtime by:
 
 ## API Mode
 
-`Lightning` can now sit in front of a running `llama.cpp` server and expose a persistent conversation API.
+`Lightning` can now manage `llama.cpp` locally and expose a persistent conversation API.
 
-Start `llama.cpp` first:
+The default path is managed mode:
 
 ```bash
-llama-server -m /absolute/path/to/model.gguf --port 8080
+LIGHTNING_MODEL=/absolute/path/to/model.gguf \
+npm run serve
 ```
 
-Then start Lightning:
+Lightning will start `llama-server` for you on `127.0.0.1:8080` by default, wait for it to become healthy, and then expose the Lightning API on `http://127.0.0.1:8787`.
+
+If you want Lightning to attach to an already-running `llama.cpp` server instead, use external mode:
 
 ```bash
 LLAMA_CPP_BASE_URL=http://127.0.0.1:8080 \
@@ -91,7 +94,12 @@ LIGHTNING_MODEL=/absolute/path/to/model.gguf \
 npm run serve
 ```
 
-The Lightning API will listen on `http://127.0.0.1:8787` by default.
+Useful managed-mode settings:
+- `LLAMA_CPP_BINARY`: path to the `llama-server` binary
+- `LLAMA_CPP_HOST`: host for the managed `llama-server` process
+- `LLAMA_CPP_PORT`: port for the managed `llama-server` process
+- `LLAMA_CPP_ARGS`: extra raw arguments passed to `llama-server`
+- `LLAMA_CPP_MANAGED=0`: force external-server mode
 
 ### Persistent thread endpoint
 

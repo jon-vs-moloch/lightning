@@ -112,6 +112,19 @@ export class InMemoryBranchStore {
     return { ...snapshot.checkpoint };
   }
 
+  getCheckpointSnapshot(checkpointId: string): CheckpointSnapshot {
+    const snapshot = this.checkpoints.get(checkpointId);
+    if (!snapshot) {
+      throw new Error(`Unknown checkpoint: ${checkpointId}`);
+    }
+
+    return {
+      checkpoint: { ...snapshot.checkpoint },
+      branch: this.cloneBranch(snapshot.branch),
+      messages: this.cloneMessages(snapshot.messages)
+    };
+  }
+
   appendMessages(branchId: string, messages: MessageRecord[]): BranchRecord {
     const state = this.requireState(branchId);
     state.messages.push(...this.cloneMessages(messages));

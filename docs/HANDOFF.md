@@ -89,3 +89,13 @@ Also note a future desired capability:
 - reconstruct a canonical, deterministic, replayable checkpoint from visible conversation history
 
 That canonical replay flow is explicitly future work and should be written down, but it does not need to be built in the current milestone.
+
+Another note for future evaluation:
+- some models will be Lightning-capable and some will not
+
+Meaning:
+- the model may be perfectly usable for ordinary inference
+- the model may even support tools or structured outputs
+- but still be a bad fit for checkpointed, recursive, branch-aware continuation if it degrades into loops, unstable summaries, or poor state discipline
+
+Treat this as an evaluation concept to formalize later, not an immediate build requirement.

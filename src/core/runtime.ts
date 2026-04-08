@@ -58,6 +58,13 @@ export class LightningRuntime {
     return this.store.listBranches();
   }
 
+  listThreadHeads(): Array<{ threadId: string; checkpointId: string }> {
+    return [...this.threadHeads.entries()].map(([threadId, checkpointId]) => ({
+      threadId,
+      checkpointId
+    }));
+  }
+
   getBranch(branchId: string): BranchRecord {
     return this.store.getBranch(branchId);
   }
@@ -68,6 +75,14 @@ export class LightningRuntime {
 
   getCheckpoint(checkpointId: string): BranchCheckpoint {
     return this.store.getCheckpoint(checkpointId);
+  }
+
+  inspectCheckpoint(checkpointId: string): {
+    checkpoint: BranchCheckpoint;
+    branch: BranchRecord;
+    messages: MessageRecord[];
+  } {
+    return this.store.getCheckpointSnapshot(checkpointId);
   }
 
   getThreadHead(threadId: string): string | undefined {
@@ -145,6 +160,35 @@ export class LightningRuntime {
       summary,
       backendRef: backendCheckpoint.backendRef ?? backendCheckpoint.id
     });
+  }
+
+  async replaceBranchMessages(branchId: string, messages: AppendMessageInput[]): Promise<BranchRecord> {
+    const branch = this.store.getBranch(branchId);
+    await this.requireAdapter(branch.backend).then((adapter) => adapter.deleteBranch(branchId));
+    this.store.deleteBranch(branchId);
+
+    const recreated = this.store.createBranch({
+      id: branch.id,
+      title: branch.title,
+      kind: branch.kind,
+      category: branch.category,
+      responsibility: branch.responsibility,
+      backend: branch.backend,
+      modelRef: branch.modelRef,
+      parentId: branch.parentId,
+      successorId: branch.successorId,
+      priority: branch.priority,
+      temperature: branch.temperature,
+      metadata: branch.metadata
+    });
+
+    await this.requireAdapter(recreated.backend).then((adapter) => adapter.createBranch(recreated));
+
+    if (messages.length > 0) {
+      return this.appendMessages(branchId, messages);
+    }
+
+    return recreated;
   }
 
   async respondFromCheckpoint(

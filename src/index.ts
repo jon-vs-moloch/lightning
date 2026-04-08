@@ -6,4 +6,5 @@ export * from "./core/store.js";
 export * from "./core/runtime.js";
 export * from "./backends/fake.js";
 export * from "./backends/llama_cpp.js";
+export * from "./backends/llama_cpp_process.js";
 export * from "./api/server.js";

@@ -65,6 +65,22 @@ Deliverables:
   - subconscious trace
 - Candle UI becomes a client/operator surface for Lightning
 
+## Phase 6: Consumer local runtime
+
+Goal:
+- make Lightning approachable as a consumer-grade local inference product
+
+Possible deliverables:
+- guided local setup flow
+- one-click recommended model installs
+- automatic hardware detection and backend selection
+- default optimization presets tuned without user intervention
+- simple branded controls for advanced runtime features
+- optional advanced configuration for power users
+
+Principle:
+- users should not need to understand inference internals in order to benefit from a better runtime
+
 ## Phase 5: Hosted backend
 
 Goal:
