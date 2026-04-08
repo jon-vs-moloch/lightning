@@ -1,0 +1,14 @@
+{
+  "name": "lightning",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "demo": "npm run build && node --experimental-specifier-resolution=node dist/examples/in-memory-demo.js"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
