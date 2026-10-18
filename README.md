@@ -58,7 +58,7 @@ What is honest to say about it today: checkpoints are in memory, and every adapt
 
 ## The inspector
 
-The API server also serves a small inspector at `/`: the branch tree with its thermal state, each branch's lineage, checkpoints and recent messages, the adapter's capability report, and a box to send a turn to any branch.
+The API server also serves a small inspector at `/`: the branch tree with its thermal state, each branch's lineage, checkpoints and recent messages, the adapter's capability report, and a box to send a turn to any branch that is not frozen (frozen branches are read-only).
 
 | Light | Dark |
 |---|---|

@@ -302,7 +302,12 @@ code, .mono { font-family: var(--mono); font-size: 12px; }
   });
 
   let state = { branches: [], adapters: [] };
-  let selected = decodeURIComponent((location.hash.match(/branch=([^&]+)/) || [])[1] || "");
+  function branchFromHash(fallback) {
+    const match = (location.hash.match(/branch=([^&]+)/) || [])[1];
+    if (match === undefined) return fallback;
+    try { return decodeURIComponent(match); } catch { return fallback; }
+  }
+  let selected = branchFromHash("");
 
   async function getJson(url, init) {
     const response = await fetch(url, init);
@@ -383,7 +388,7 @@ code, .mono { font-family: var(--mono); font-size: 12px; }
   async function renderDetail(id) {
     const [thread, branch] = [await getJson(`/v1/threads/${encodeURIComponent(id)}`), state.branches.find((b) => b.id === id)];
     const b = thread.branch;
-    const parent = b.parentId ? `<a href="#branch=${esc(b.parentId)}">${esc(b.parentId)}</a> <span class="faint">›</span>` : `<span class="faint">root</span> <span class="faint">›</span>`;
+    const parent = b.parentId ? `<a href="#branch=${esc(encodeURIComponent(b.parentId))}">${esc(b.parentId)}</a> <span class="faint">›</span>` : `<span class="faint">root</span> <span class="faint">›</span>`;
     const children = state.branches.filter((c) => c.parentId === b.id);
     const frozen = b.temperature === "frozen";
     const checkpoints = b.checkpoints.slice().reverse();
@@ -398,8 +403,8 @@ code, .mono { font-family: var(--mono); font-size: 12px; }
         <h2>${esc(b.title)}</h2>
         <p>${esc(b.responsibility)}</p>
         <div class="lineage">${parent} <code>${esc(b.id)}</code>
-          ${children.length ? `<span class="faint">›</span> <span>${children.map((c) => `<a href="#branch=${esc(c.id)}">${esc(c.id)}</a>`).join(`<span class="faint">, </span>`)}</span>` : ""}
-          ${b.successorId ? `<span class="faint">· succeeded by</span> <a href="#branch=${esc(b.successorId)}">${esc(b.successorId)}</a>` : ""}
+          ${children.length ? `<span class="faint">›</span> <span>${children.map((c) => `<a href="#branch=${esc(encodeURIComponent(c.id))}">${esc(c.id)}</a>`).join(`<span class="faint">, </span>`)}</span>` : ""}
+          ${b.successorId ? `<span class="faint">· succeeded by</span> <a href="#branch=${esc(encodeURIComponent(b.successorId))}">${esc(b.successorId)}</a>` : ""}
         </div>
       </div>
       <div class="stats">
@@ -460,7 +465,7 @@ code, .mono { font-family: var(--mono); font-size: 12px; }
     if (button) location.hash = `branch=${encodeURIComponent(button.dataset.id)}`;
   });
   addEventListener("hashchange", () => {
-    selected = decodeURIComponent((location.hash.match(/branch=([^&]+)/) || [])[1] || selected);
+    selected = branchFromHash(selected);
     renderTree();
     renderDetail(selected).catch(showError);
   });
