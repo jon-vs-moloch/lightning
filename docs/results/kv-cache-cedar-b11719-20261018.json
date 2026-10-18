@@ -1,0 +1,661 @@
+{
+  "schema": "lightning-kv-cache-demo/v1",
+  "startedAt": "2026-10-18T22:02:08.138Z",
+  "finishedAt": "2026-10-18T22:08:52.269Z",
+  "conditions": {
+    "baseUrl": "http://127.0.0.1:18431",
+    "branches": 4,
+    "reps": 3,
+    "label": "Cedar OCI Ampere A1 (Neoverse-N1) 4 vCPU, CPU only; llama-server b11719 ubuntu-arm64 release; qwen2.5-0.5b-instruct-q8_0; flags: --parallel 4 -c 32768 --slot-save-path DIR --cache-ram 0 -t 4",
+    "buildInfo": "b11719-5aeac37a3",
+    "modelPath": ".../qwen2.5-0.5b-instruct-q8_0.gguf",
+    "totalSlots": 4,
+    "nCtxPerSlot": 8192,
+    "nodeVersion": "v22.23.2",
+    "hostname": "redacted (OCI Ampere A1 VM)",
+    "cpu": "4 x Neoverse-N1",
+    "totalMemGiB": 23.4,
+    "startedAt": "2026-10-18T22:02:08.138Z",
+    "finishedAt": "2026-10-18T22:08:52.269Z"
+  },
+  "probe": {
+    "mode": "native",
+    "reason": "llama-server slot save/restore active: 4 slots (b11719-5aeac37a3)",
+    "slots": 4,
+    "buildInfo": "b11719-5aeac37a3"
+  },
+  "reps": [
+    {
+      "rep": 1,
+      "trunk": {
+        "branchId": "trunk-r1",
+        "slot": 3,
+        "prompt_n": 3019,
+        "cache_n": 0,
+        "prompt_ms": 12820.641,
+        "predicted_n": 19,
+        "predicted_ms": 427.398
+      },
+      "forks": [
+        {
+          "tipId": "tip-0-r1",
+          "slot": 3,
+          "reply": "District 3 has the highest number of deliveries with 210 deliveries.",
+          "prompt_n": 22,
+          "cache_n": 3037,
+          "prompt_ms": 257.449,
+          "predicted_n": 17,
+          "predicted_ms": 391.054
+        },
+        {
+          "tipId": "tip-1-r1",
+          "slot": 3,
+          "reply": "District 4 has the highest number of returns with 127 returns, followed by District 11 with 147 returns.",
+          "prompt_n": 22,
+          "cache_n": 3037,
+          "prompt_ms": 257.577,
+          "predicted_n": 30,
+          "predicted_ms": 702.51
+        },
+        {
+          "tipId": "tip-2-r1",
+          "slot": 3,
+          "reply": "District 5 has a balance of 990 credits, which is the largest among the districts listed.",
+          "prompt_n": 22,
+          "cache_n": 3037,
+          "prompt_ms": 283.452,
+          "predicted_n": 23,
+          "predicted_ms": 564.829
+        },
+        {
+          "tipId": "tip-3-r1",
+          "slot": 3,
+          "reply": "District 6 has an unusually high balance of 990 credits, which is significantly higher than the average balance of 880 credits for all districts.",
+          "prompt_n": 22,
+          "cache_n": 3037,
+          "prompt_ms": 255.919,
+          "predicted_n": 34,
+          "predicted_ms": 797.916
+        }
+      ],
+      "fanout": {
+        "wallMs": 3355.5041579999997,
+        "tips": [
+          {
+            "tipId": "tip-0-r1",
+            "slot": 3,
+            "reply": "The single most important number is the number of deliveries (210) in District 3, as it represents the bulk of the data and is crucial for",
+            "prompt_n": 28,
+            "cache_n": 3075,
+            "prompt_ms": 629.137,
+            "predicted_n": 32,
+            "predicted_ms": 2626.536
+          },
+          {
+            "tipId": "tip-1-r1",
+            "slot": 2,
+            "reply": "The single most important number is the balance of 990 credits, as it represents the largest number of deliveries and returns across all districts.",
+            "prompt_n": 28,
+            "cache_n": 3088,
+            "prompt_ms": 629.008,
+            "predicted_n": 30,
+            "predicted_ms": 2513.155
+          },
+          {
+            "tipId": "tip-2-r1",
+            "slot": 1,
+            "reply": "The single most important number is 990, as it represents the largest balance among the districts listed.",
+            "prompt_n": 28,
+            "cache_n": 3081,
+            "prompt_ms": 668.431,
+            "predicted_n": 23,
+            "predicted_ms": 1416.238
+          },
+          {
+            "tipId": "tip-3-r1",
+            "slot": 0,
+            "reply": "The single most important number is the balance of 990 credits, as it represents the highest balance among all districts, indicating a significant discrepancy in the financial",
+            "prompt_n": 28,
+            "cache_n": 3092,
+            "prompt_ms": 668.145,
+            "predicted_n": 32,
+            "predicted_ms": 1996.981
+          }
+        ]
+      },
+      "coldSequential": {
+        "wallMs": 56908.03344399999,
+        "tips": [
+          {
+            "tipId": "tip-0-r1",
+            "slot": 0,
+            "reply": "The most important number is the number of deliveries (210) as it represents the largest number of deliveries across all districts.",
+            "wallMs": 14061.093658999998,
+            "prompt_n": 3103,
+            "cache_n": 0,
+            "prompt_ms": 13396.793,
+            "predicted_n": 27,
+            "predicted_ms": 652.309
+          },
+          {
+            "tipId": "tip-1-r1",
+            "slot": 0,
+            "reply": "The single most important number is the balance of 990 credits, as it represents the largest number of deliveries and returns in the district ledger.",
+            "wallMs": 14585.473827000002,
+            "prompt_n": 3116,
+            "cache_n": 0,
+            "prompt_ms": 13766.42,
+            "predicted_n": 31,
+            "predicted_ms": 807.968
+          },
+          {
+            "tipId": "tip-2-r1",
+            "slot": 0,
+            "reply": "The single most important number is 990, as it represents the largest balance among the districts listed.",
+            "wallMs": 14166.610208999999,
+            "prompt_n": 3109,
+            "cache_n": 0,
+            "prompt_ms": 13618.004,
+            "predicted_n": 23,
+            "predicted_ms": 536.989
+          },
+          {
+            "tipId": "tip-3-r1",
+            "slot": 0,
+            "reply": "The single most important number is the balance of 990 credits, as it represents the highest balance among all districts, indicating a significant discrepancy in the financial",
+            "wallMs": 14094.822629000002,
+            "prompt_n": 3120,
+            "cache_n": 0,
+            "prompt_ms": 13327.042,
+            "predicted_n": 32,
+            "predicted_ms": 755.28
+          }
+        ]
+      },
+      "coldParallel": {
+        "wallMs": 57050.044394,
+        "tips": [
+          {
+            "tipId": "tip-0-r1",
+            "slot": 0,
+            "reply": "The most important number is the number of deliveries (210) as it represents the largest number of deliveries across all districts.",
+            "prompt_n": 3103,
+            "cache_n": 0,
+            "prompt_ms": 16554.339,
+            "predicted_n": 27,
+            "predicted_ms": 32916.582
+          },
+          {
+            "tipId": "tip-1-r1",
+            "slot": 1,
+            "reply": "The most important number is the balance of 990 credits, as it represents the largest number of deliveries and returns across all districts.",
+            "prompt_n": 3116,
+            "cache_n": 0,
+            "prompt_ms": 29558.542,
+            "predicted_n": 29,
+            "predicted_ms": 12892.213
+          },
+          {
+            "tipId": "tip-2-r1",
+            "slot": 2,
+            "reply": "The single most important number is 990, as it represents the largest balance among the districts listed.",
+            "prompt_n": 3109,
+            "cache_n": 0,
+            "prompt_ms": 44023.21,
+            "predicted_n": 23,
+            "predicted_ms": 12551.014
+          },
+          {
+            "tipId": "tip-3-r1",
+            "slot": 3,
+            "reply": "The single most important number is the balance of 990 credits, as it represents the highest balance among all districts, indicating a significant discrepancy in the financial",
+            "prompt_n": 3120,
+            "cache_n": 0,
+            "prompt_ms": 21331.282,
+            "predicted_n": 32,
+            "predicted_ms": 1857.173
+          }
+        ]
+      },
+      "sameTextAsColdSequential": [
+        false,
+        false,
+        true,
+        true
+      ]
+    },
+    {
+      "rep": 2,
+      "trunk": {
+        "branchId": "trunk-r2",
+        "slot": 0,
+        "prompt_n": 3019,
+        "cache_n": 0,
+        "prompt_ms": 12797.745,
+        "predicted_n": 19,
+        "predicted_ms": 435.028
+      },
+      "forks": [
+        {
+          "tipId": "tip-0-r2",
+          "slot": 0,
+          "reply": "District 3 has the highest number of deliveries with 210 deliveries.",
+          "prompt_n": 22,
+          "cache_n": 3037,
+          "prompt_ms": 255.541,
+          "predicted_n": 17,
+          "predicted_ms": 415.73
+        },
+        {
+          "tipId": "tip-1-r2",
+          "slot": 0,
+          "reply": "District 4 has the highest number of returns with 127 returns, followed by District 11 with 147 returns.",
+          "prompt_n": 22,
+          "cache_n": 3037,
+          "prompt_ms": 253.844,
+          "predicted_n": 30,
+          "predicted_ms": 722.347
+        },
+        {
+          "tipId": "tip-2-r2",
+          "slot": 0,
+          "reply": "District 5 has a balance of 990 credits, which is the largest among the districts listed.",
+          "prompt_n": 22,
+          "cache_n": 3037,
+          "prompt_ms": 254.733,
+          "predicted_n": 23,
+          "predicted_ms": 549.606
+        },
+        {
+          "tipId": "tip-3-r2",
+          "slot": 0,
+          "reply": "District 6 has an unusually high balance of 990 credits, which is significantly higher than the average balance of 880 credits for all districts.",
+          "prompt_n": 22,
+          "cache_n": 3037,
+          "prompt_ms": 262.719,
+          "predicted_n": 34,
+          "predicted_ms": 828.787
+        }
+      ],
+      "fanout": {
+        "wallMs": 3412.9630489999836,
+        "tips": [
+          {
+            "tipId": "tip-0-r2",
+            "slot": 0,
+            "reply": "The single most important number is the number of deliveries (210) in District 3, as it represents the bulk of the data and is crucial for",
+            "prompt_n": 28,
+            "cache_n": 3075,
+            "prompt_ms": 656.834,
+            "predicted_n": 32,
+            "predicted_ms": 2662.657
+          },
+          {
+            "tipId": "tip-1-r2",
+            "slot": 3,
+            "reply": "The most important number is the balance of 990 credits, as it represents the largest number of deliveries and returns in the district.",
+            "prompt_n": 28,
+            "cache_n": 3088,
+            "prompt_ms": 656.612,
+            "predicted_n": 29,
+            "predicted_ms": 2512.652
+          },
+          {
+            "tipId": "tip-2-r2",
+            "slot": 2,
+            "reply": "The single most important number is 990, as it represents the largest balance among the districts listed.",
+            "prompt_n": 28,
+            "cache_n": 3081,
+            "prompt_ms": 689.006,
+            "predicted_n": 23,
+            "predicted_ms": 1456.782
+          },
+          {
+            "tipId": "tip-3-r2",
+            "slot": 1,
+            "reply": "The single most important number is the balance of 990 credits, as it represents the highest balance among all districts, indicating a significant discrepancy in the financial",
+            "prompt_n": 28,
+            "cache_n": 3092,
+            "prompt_ms": 689.166,
+            "predicted_n": 32,
+            "predicted_ms": 2004.142
+          }
+        ]
+      },
+      "coldSequential": {
+        "wallMs": 57149.597382999986,
+        "tips": [
+          {
+            "tipId": "tip-0-r2",
+            "slot": 0,
+            "reply": "The most important number is the number of deliveries (210) as it represents the largest number of deliveries across all districts.",
+            "wallMs": 14330.424358000018,
+            "prompt_n": 3103,
+            "cache_n": 0,
+            "prompt_ms": 13312.868,
+            "predicted_n": 27,
+            "predicted_ms": 1005.507
+          },
+          {
+            "tipId": "tip-1-r2",
+            "slot": 0,
+            "reply": "The single most important number is the balance of 990 credits, as it represents the largest number of deliveries and returns in the district ledger.",
+            "wallMs": 14525.914265,
+            "prompt_n": 3116,
+            "cache_n": 0,
+            "prompt_ms": 13766.205,
+            "predicted_n": 31,
+            "predicted_ms": 748.734
+          },
+          {
+            "tipId": "tip-2-r2",
+            "slot": 0,
+            "reply": "The single most important number is 990, as it represents the largest balance among the districts listed.",
+            "wallMs": 13951.654160000006,
+            "prompt_n": 3109,
+            "cache_n": 0,
+            "prompt_ms": 13393.171,
+            "predicted_n": 23,
+            "predicted_ms": 547.082
+          },
+          {
+            "tipId": "tip-3-r2",
+            "slot": 0,
+            "reply": "The single most important number is the balance of 990 credits, as it represents the highest balance among all districts, indicating a significant discrepancy in the financial",
+            "wallMs": 14341.58487999998,
+            "prompt_n": 3120,
+            "cache_n": 0,
+            "prompt_ms": 13527.883,
+            "predicted_n": 32,
+            "predicted_ms": 802.529
+          }
+        ]
+      },
+      "coldParallel": {
+        "wallMs": 57470.07183,
+        "tips": [
+          {
+            "tipId": "tip-0-r2",
+            "slot": 0,
+            "reply": "The most important number is the number of deliveries (210) as it represents the largest number of deliveries across all districts.",
+            "prompt_n": 3103,
+            "cache_n": 0,
+            "prompt_ms": 16706.1,
+            "predicted_n": 27,
+            "predicted_ms": 40347.495
+          },
+          {
+            "tipId": "tip-1-r2",
+            "slot": 1,
+            "reply": "The most important number is the balance of 990 credits, as it represents the largest number of deliveries and returns in the district.",
+            "prompt_n": 3116,
+            "cache_n": 0,
+            "prompt_ms": 27482.726,
+            "predicted_n": 29,
+            "predicted_ms": 22517.352
+          },
+          {
+            "tipId": "tip-2-r2",
+            "slot": 2,
+            "reply": "The single most important number is the balance of 990 credits, as it represents the largest balance among the districts listed.",
+            "prompt_n": 3109,
+            "cache_n": 0,
+            "prompt_ms": 17572.832,
+            "predicted_n": 27,
+            "predicted_ms": 12839.702
+          },
+          {
+            "tipId": "tip-3-r2",
+            "slot": 3,
+            "reply": "The single most important number is the balance of 990 credits, as it represents the highest balance among all districts, indicating a significant discrepancy in the financial",
+            "prompt_n": 3120,
+            "cache_n": 0,
+            "prompt_ms": 20916.736,
+            "predicted_n": 32,
+            "predicted_ms": 1764.275
+          }
+        ]
+      },
+      "sameTextAsColdSequential": [
+        false,
+        false,
+        true,
+        true
+      ]
+    },
+    {
+      "rep": 3,
+      "trunk": {
+        "branchId": "trunk-r3",
+        "slot": 1,
+        "prompt_n": 3019,
+        "cache_n": 0,
+        "prompt_ms": 12847.181,
+        "predicted_n": 19,
+        "predicted_ms": 449.548
+      },
+      "forks": [
+        {
+          "tipId": "tip-0-r3",
+          "slot": 1,
+          "reply": "District 3 has the highest number of deliveries with 210 deliveries.",
+          "prompt_n": 22,
+          "cache_n": 3037,
+          "prompt_ms": 258.08,
+          "predicted_n": 17,
+          "predicted_ms": 398.232
+        },
+        {
+          "tipId": "tip-1-r3",
+          "slot": 1,
+          "reply": "District 4 has the highest number of returns with 127 returns, followed by District 11 with 147 returns.",
+          "prompt_n": 22,
+          "cache_n": 3037,
+          "prompt_ms": 255.201,
+          "predicted_n": 30,
+          "predicted_ms": 741.743
+        },
+        {
+          "tipId": "tip-2-r3",
+          "slot": 1,
+          "reply": "District 5 has a balance of 990 credits, which is the largest among the districts listed.",
+          "prompt_n": 22,
+          "cache_n": 3037,
+          "prompt_ms": 260.237,
+          "predicted_n": 23,
+          "predicted_ms": 536.012
+        },
+        {
+          "tipId": "tip-3-r3",
+          "slot": 1,
+          "reply": "District 6 has an unusually high balance of 990 credits, which is significantly higher than the average balance of 880 credits for all districts.",
+          "prompt_n": 22,
+          "cache_n": 3037,
+          "prompt_ms": 253.511,
+          "predicted_n": 34,
+          "predicted_ms": 849.399
+        }
+      ],
+      "fanout": {
+        "wallMs": 3446.5640860000276,
+        "tips": [
+          {
+            "tipId": "tip-0-r3",
+            "slot": 1,
+            "reply": "The single most important number is the number of deliveries (210) in District 3, as it represents the bulk of the data and is crucial for",
+            "prompt_n": 28,
+            "cache_n": 3075,
+            "prompt_ms": 961.248,
+            "predicted_n": 32,
+            "predicted_ms": 2382.3
+          },
+          {
+            "tipId": "tip-1-r3",
+            "slot": 0,
+            "reply": "The single most important number is the balance of 990 credits, as it represents the largest number of deliveries and returns in the district ledger.",
+            "prompt_n": 28,
+            "cache_n": 3088,
+            "prompt_ms": 961.384,
+            "predicted_n": 31,
+            "predicted_ms": 2332.962
+          },
+          {
+            "tipId": "tip-2-r3",
+            "slot": 3,
+            "reply": "The single most important number is 990, as it represents the largest balance among the districts listed.",
+            "prompt_n": 28,
+            "cache_n": 3081,
+            "prompt_ms": 961.059,
+            "predicted_n": 23,
+            "predicted_ms": 1814.386
+          },
+          {
+            "tipId": "tip-3-r3",
+            "slot": 2,
+            "reply": "The single most important number is the balance of 990 credits, as it represents the highest balance among all districts, indicating a significant discrepancy in the financial",
+            "prompt_n": 28,
+            "cache_n": 3092,
+            "prompt_ms": 392.535,
+            "predicted_n": 32,
+            "predicted_ms": 2039.135
+          }
+        ]
+      },
+      "coldSequential": {
+        "wallMs": 56847.15138300002,
+        "tips": [
+          {
+            "tipId": "tip-0-r3",
+            "slot": 0,
+            "reply": "The most important number is the number of deliveries (210) as it represents the largest number of deliveries across all districts.",
+            "wallMs": 14431.014965999988,
+            "prompt_n": 3103,
+            "cache_n": 0,
+            "prompt_ms": 13767.042,
+            "predicted_n": 27,
+            "predicted_ms": 652.23
+          },
+          {
+            "tipId": "tip-1-r3",
+            "slot": 0,
+            "reply": "The single most important number is the balance of 990 credits, as it represents the largest number of deliveries and returns in the district ledger.",
+            "wallMs": 14205.221107999969,
+            "prompt_n": 3116,
+            "cache_n": 0,
+            "prompt_ms": 13431.877,
+            "predicted_n": 31,
+            "predicted_ms": 761.457
+          },
+          {
+            "tipId": "tip-2-r3",
+            "slot": 0,
+            "reply": "The single most important number is 990, as it represents the largest balance among the districts listed.",
+            "wallMs": 13928.757573000039,
+            "prompt_n": 3109,
+            "cache_n": 0,
+            "prompt_ms": 13368.446,
+            "predicted_n": 23,
+            "predicted_ms": 549.491
+          },
+          {
+            "tipId": "tip-3-r3",
+            "slot": 0,
+            "reply": "The single most important number is the balance of 990 credits, as it represents the highest balance among all districts, indicating a significant discrepancy in the financial",
+            "wallMs": 14282.137736000004,
+            "prompt_n": 3120,
+            "cache_n": 0,
+            "prompt_ms": 13493.325,
+            "predicted_n": 32,
+            "predicted_ms": 777.734
+          }
+        ]
+      },
+      "coldParallel": {
+        "wallMs": 57556.856876000005,
+        "tips": [
+          {
+            "tipId": "tip-0-r3",
+            "slot": 0,
+            "reply": "The most important number is the number of deliveries (210) as it represents the largest number of deliveries across all districts.",
+            "prompt_n": 3103,
+            "cache_n": 0,
+            "prompt_ms": 16777.564,
+            "predicted_n": 27,
+            "predicted_ms": 40381.954
+          },
+          {
+            "tipId": "tip-1-r3",
+            "slot": 1,
+            "reply": "The most important number is the balance of 990 credits, as it represents the largest number of deliveries and returns in the district.",
+            "prompt_n": 3116,
+            "cache_n": 0,
+            "prompt_ms": 27495.531,
+            "predicted_n": 29,
+            "predicted_ms": 22562.223
+          },
+          {
+            "tipId": "tip-2-r3",
+            "slot": 2,
+            "reply": "The single most important number is the balance of 990 credits, as it represents the largest balance among the districts listed.",
+            "prompt_n": 3109,
+            "cache_n": 0,
+            "prompt_ms": 17540.876,
+            "predicted_n": 27,
+            "predicted_ms": 12879.079
+          },
+          {
+            "tipId": "tip-3-r3",
+            "slot": 3,
+            "reply": "The single most important number is the balance of 990 credits, as it represents the highest balance among all districts, indicating a significant discrepancy in the financial",
+            "prompt_n": 3120,
+            "cache_n": 0,
+            "prompt_ms": 20927.434,
+            "predicted_n": 32,
+            "predicted_ms": 1783.389
+          }
+        ]
+      },
+      "sameTextAsColdSequential": [
+        false,
+        true,
+        true,
+        true
+      ]
+    }
+  ],
+  "medians": {
+    "fanout": {
+      "prompt_n": 28,
+      "cache_n": 3084.5,
+      "prompt_ms": 668.288
+    },
+    "cold": {
+      "prompt_n": 3112.5,
+      "prompt_ms": 13462.601
+    },
+    "fork": {
+      "prompt_n": 22,
+      "cache_n": 3037,
+      "prompt_ms": 256.684
+    },
+    "fanWallMs": 3412.9630489999836,
+    "coldSeqWallMs": 56908.03344399999,
+    "coldParWallMs": 57470.07183,
+    "speedupVsSequentialCold": 16.674084256691366,
+    "speedupVsParallelCold": 16.83876180459646
+  },
+  "provenance": {
+    "note": "Added by the operator after the run; modelPath directory and hostname redacted before publishing. No measured value was changed.",
+    "llamaCpp": {
+      "release": "b11719",
+      "asset": "https://github.com/ggml-org/llama.cpp/releases/download/b11719/llama-b11719-bin-ubuntu-arm64.tar.gz",
+      "sha256": "290aa4432ad8e28b638285be6a75d0dd6f327d9b2d95f7048a8cf5e69704bee9"
+    },
+    "model": {
+      "url": "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/9217f5db79a29953eb74d5343926648285ec7e67/qwen2.5-0.5b-instruct-q8_0.gguf",
+      "sha256": "ca59ca7f13d0e15a8cfa77bd17e65d24f6844b554a7b6c12e07a5f89ff76844e",
+      "license": "apache-2.0"
+    },
+    "serverCommand": "llama-server -m qwen2.5-0.5b-instruct-q8_0.gguf --host 127.0.0.1 --port 18431 --parallel 4 -c 32768 --slot-save-path DIR --cache-ram 0 -t 4"
+  }
+}

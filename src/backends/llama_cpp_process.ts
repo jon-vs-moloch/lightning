@@ -5,6 +5,10 @@ export interface ManagedLlamaCppServerOptions {
   modelPath: string;
   host?: string;
   port?: number;
+  /** directory for llama-server slot KV files; enables native KV checkpoints */
+  slotSavePath?: string;
+  /** number of llama-server slots (--parallel) */
+  parallel?: number;
   commandArgsPrefix?: string[];
   extraArgs?: string[];
   env?: NodeJS.ProcessEnv;
@@ -43,6 +47,12 @@ export class ManagedLlamaCppServer {
       host,
       "--port",
       String(port),
+      ...(this.options.slotSavePath
+        ? ["--slot-save-path", this.options.slotSavePath]
+        : []),
+      ...(this.options.parallel === undefined
+        ? []
+        : ["--parallel", String(this.options.parallel)]),
       ...(this.options.extraArgs ?? [])
     ];
 

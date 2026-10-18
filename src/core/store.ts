@@ -148,8 +148,14 @@ export class InMemoryBranchStore {
 
   checkpointBranch(branchId: string, input: CreateCheckpointInput = {}): BranchCheckpoint {
     const state = this.requireState(branchId);
+    // Ids must never be reused: restore rewinds the branch's checkpoint list, but
+    // older snapshots stay addressable in this.checkpoints.
+    let n = state.branch.checkpoints.length + 1;
+    while (this.checkpoints.has(`ckpt-${branchId}-${n}`)) {
+      n += 1;
+    }
     const checkpoint: BranchCheckpoint = {
-      id: `ckpt-${branchId}-${state.branch.checkpoints.length + 1}`,
+      id: `ckpt-${branchId}-${n}`,
       branchId,
       createdAt: new Date().toISOString(),
       label: input.label,

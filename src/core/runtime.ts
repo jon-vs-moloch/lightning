@@ -244,6 +244,54 @@ export class LightningRuntime {
     };
   }
 
+  /**
+   * Fan one request out to several checkpoints at once: each checkpoint is restored on its own branch,
+   * answered, and checkpointed again, in parallel. With a native-KV adapter each branch continues from its
+   * saved KV state, so only the new suffix is prefilled. The checkpoints must be on distinct branches,
+   * because one branch can only hold one head at a time.
+   */
+  async fanOutFromCheckpoints(
+    checkpointIds: string[],
+    requestMessage: AppendMessageInput,
+    request: GenerateRequest = {},
+    options?: { checkpointLabel?: string }
+  ): Promise<
+    Array<{
+      checkpointId: string;
+      branch: BranchRecord;
+      generation: GenerateResult;
+      checkpoint: BranchCheckpoint;
+    }>
+  > {
+    if (checkpointIds.length === 0) {
+      throw new Error("fanOutFromCheckpoints needs at least one checkpoint id");
+    }
+
+    const branchByCheckpoint = checkpointIds.map((checkpointId) => ({
+      checkpointId,
+      branchId: this.getCheckpoint(checkpointId).branchId
+    }));
+    const branchOwners = new Map<string, string>();
+    branchByCheckpoint.forEach(({ checkpointId, branchId }) => {
+      const previousCheckpointId = branchOwners.get(branchId);
+      if (previousCheckpointId !== undefined) {
+        throw new Error(
+          `fanOutFromCheckpoints: checkpoints ${previousCheckpointId} and ${checkpointId} are both on branch ${branchId}; fan-out needs distinct branches`
+        );
+      }
+      branchOwners.set(branchId, checkpointId);
+    });
+
+    return Promise.all(
+      branchByCheckpoint.map(async ({ checkpointId }) => {
+        const result = await this.respondFromCheckpoint(checkpointId, requestMessage, request, {
+          checkpointLabel: options?.checkpointLabel
+        });
+        return { checkpointId, ...result };
+      })
+    );
+  }
+
   async restoreBranch(branchId: string, checkpointId: string): Promise<BranchRecord> {
     const branch = this.store.getBranch(branchId);
     const checkpoint = branch.checkpoints.find((item) => item.id === checkpointId);
@@ -276,10 +324,24 @@ export class LightningRuntime {
       adapter.branchStats(branchId)
     );
 
+    if (adapterStats.cachedTokensSource === "measured") {
+      return {
+        ...localStats,
+        promptTokens: adapterStats.promptTokens,
+        cachedTokens: adapterStats.cachedTokens,
+        cachedTokensSource: "measured",
+        metadata: {
+          ...localStats.metadata,
+          adapter: adapterStats.metadata ?? {}
+        }
+      };
+    }
+
     return {
       ...localStats,
       promptTokens: Math.max(localStats.promptTokens ?? 0, adapterStats.promptTokens ?? 0),
       cachedTokens: Math.max(localStats.cachedTokens ?? 0, adapterStats.cachedTokens ?? 0),
+      cachedTokensSource: "estimated",
       metadata: {
         ...localStats.metadata,
         adapter: adapterStats.metadata ?? {}

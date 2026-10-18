@@ -68,6 +68,8 @@ export interface BranchStats {
   branchId: string;
   promptTokens?: number;
   cachedTokens?: number;
+  /** Whether cachedTokens came from the backend's measured KV reuse or an estimate. */
+  cachedTokensSource?: "measured" | "estimated";
   checkpointCount: number;
   messageCount: number;
   metadata?: Record<string, unknown>;
@@ -82,4 +84,13 @@ export interface AdapterCapabilities {
   fork: CapabilityMode;
   ephemeralConsult: CapabilityMode;
   prefixReuse: CapabilityMode;
+}
+
+/** llama-server per-request timings block (non-standard OpenAI extension). */
+export interface LlamaCppTimings {
+  cache_n?: number;
+  prompt_n?: number;
+  prompt_ms?: number;
+  predicted_n?: number;
+  predicted_ms?: number;
 }

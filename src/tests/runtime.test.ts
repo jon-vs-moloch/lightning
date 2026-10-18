@@ -78,3 +78,28 @@ test("restore rewinds messages to the checkpoint snapshot", async () => {
   assert.equal(restoredMessages.length, 1);
   assert.equal(restoredMessages[0]?.content, "Before checkpoint.");
 });
+
+test("checkpoint ids stay unique after restoring to an earlier checkpoint", async () => {
+  const runtime = await createRuntime();
+
+  await runtime.appendMessages("chat-main", [
+    { role: "user", content: "Turn one." }
+  ]);
+  const c1 = await runtime.checkpointBranch("chat-main", "turn-1");
+
+  await runtime.appendMessages("chat-main", [
+    { role: "user", content: "Turn two." }
+  ]);
+  const c2 = await runtime.checkpointBranch("chat-main", "turn-2");
+
+  await runtime.restoreBranch("chat-main", c1.id);
+
+  await runtime.appendMessages("chat-main", [
+    { role: "user", content: "Turn three." }
+  ]);
+  const c3 = await runtime.checkpointBranch("chat-main", "turn-3");
+
+  assert.notEqual(c3.id, c2.id);
+  assert.equal(runtime.inspectCheckpoint(c2.id).messages.length, 2);
+  assert.equal(runtime.inspectCheckpoint(c3.id).messages.length, 2);
+});

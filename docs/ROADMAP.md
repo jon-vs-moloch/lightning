@@ -1,6 +1,6 @@
 # Lightning Roadmap
 
-Status as of October 2026: Phases 0 and 1 are done. Phase 2 is partly done: the `llama.cpp` adapter and managed `llama-server` lifecycle work, but every branch operation is emulated at the message level (no native KV-cache checkpoints yet). Phases 3 onward have not started.
+Status as of October 2026: Phases 0 and 1 are done. Phase 2 is partly done: the `llama.cpp` adapter has native KV checkpoints — restore, fork and prefix reuse via llama-server slot save/restore, measured on one small CPU setup. Remaining Phase 2 gaps: `freeze`/`thaw`/`loadModel` are still emulated, there is no slot-file garbage collection and no persistence. Phases 3 onward have not started.
 
 ## Phase 0: Scaffold
 
@@ -41,6 +41,14 @@ Deliverables:
 - branch generate
 - checkpoint/freeze/thaw
 - native vs emulated capability reporting
+
+Status:
+- done: one working adapter (`llama.cpp`) plus the managed `llama-server` lifecycle
+- done: branch generate
+- done: checkpoint/restore, fork and prefix reuse as native KV operations when `llama-server` runs with `--slot-save-path` (startup probe; reported native or emulated, with the reason); measured 2026-10-18
+- open: `freeze`, `thaw` and `loadModel` are still emulated
+- open: slot-file garbage collection
+- open: persistence (the branch store and checkpoint metadata are in memory)
 
 ## Phase 3: Successor compaction
 

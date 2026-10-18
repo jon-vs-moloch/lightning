@@ -4,7 +4,7 @@
 
 Lightning is a sketch of a different shape for LLM runtimes: stop treating context as a transcript you replay, and start treating it as a checkpoint you continue from.
 
-It is an idea with a runnable first slice, not a finished runtime. The branch model, the HTTP API and a working `llama.cpp` backend exist. The part that would make it fast, real KV-cache checkpoints, does not exist yet.
+It is an idea with a runnable first slice, not a finished runtime. The branch model, the HTTP API and a working `llama.cpp` backend exist. Real llama.cpp KV-cache checkpoints also exist now, when `llama-server` is started with `--slot-save-path`; measured so far on one small CPU setup (see [Measured: branches without prefill](#measured-branches-without-prefill)).
 
 ![Lightning architecture: a tree of branches stratified by write frequency, with checkpoints instead of transcripts](docs/architecture.svg)
 
@@ -47,7 +47,8 @@ A small, typed, tested TypeScript scaffold (about 3k lines, no runtime dependenc
 - a thermal planner that ranks branches and assigns hot, warm and cold;
 - a backend adapter contract where every capability (checkpoint, fork, prefix reuse, …) reports itself as `native`, `emulated` or `unsupported`;
 - a fake adapter for demos and tests;
-- a working `llama.cpp` adapter, plus a process manager that starts and supervises `llama-server` for you;
+- a working `llama.cpp` adapter with native KV checkpoints when `llama-server` runs with `--slot-save-path` (slot save/restore, checked by a startup probe), plus a process manager that starts and supervises `llama-server` for you;
+- fan-out from checkpoints (`fanOutFromCheckpoints`): one request against several checkpoints on distinct branches in parallel, one slot each;
 - an HTTP API on `127.0.0.1:8787`:
   - persistent threads: `POST /v1/threads/:id/messages`, `GET /v1/threads/:id`, `POST /v1/threads/:id/pin`;
   - checkpoint-native turns: `POST /v1/checkpoints/:id/respond`, `GET /v1/checkpoints/:id`;
@@ -56,11 +57,47 @@ A small, typed, tested TypeScript scaffold (about 3k lines, no runtime dependenc
   - POST bodies must be `content-type: application/json` and at most 1 MiB (otherwise `415` or `413`). A frozen branch is read-only: turns, pins and checkpoint responses on it get `409` until it is thawed.
   - The server only answers requests whose `Host` header names it: `localhost`, `127.0.0.1` or `[::1]` with the port it listens on, plus any configured host. Everything else gets `403`. This blocks DNS-rebinding pages from reaching the API through the browser. `HOST` set to a specific address is allowed automatically on `PORT`. If you bind a wildcard address (`HOST=0.0.0.0`), sit behind a proxy, or publish the port under another number (a container's `8787` mapped to `localhost:9000`), list what clients send in `LIGHTNING_ALLOWED_HOSTS` (comma-separated; `host` matches any port, `host:port` only that port). A loopback name on another port is accepted only when it is listed, so the check stays fail-closed. Bad request bodies (a missing `message`, or a missing, empty or malformed `messages` array) get `400`, and an unknown thread or checkpoint gets `404`.
 
-What is honest to say about it today: checkpoints are in memory, and every adapter, `llama.cpp` included, emulates them at the message level. Native KV-cache checkpoints, persistence and successor compaction are the next phases. Streaming is not implemented.
+What is honest to say about it today: native KV checkpoints exist for `llama.cpp` when the server is started with a slot save path; otherwise the adapter reports the branch operations as emulated and says why. The branch store and checkpoint metadata are in memory, so persistence, successor compaction, slot-file garbage collection and streaming are still not done.
+
+## Measured: branches without prefill
+
+A branch tip is saved KV state, not just a list of messages. So one query can be answered from many branch tips without re-prefilling any of them, and serial conversations stop being the unit.
+
+Setup: a ~3,000-token trunk conversation, checkpointed; forked into 4 tips with one extra turn each; then one question fanned out to all 4 tips. M = 4, 3 repetitions, medians below.
+
+| Per tip | Evaluated | Reused from KV | prompt_ms |
+|---|---:|---:|---:|
+| Restored continuation (fan-out) | 28 | 3,085 | 668 |
+| Fork turn from trunk checkpoint | 22 | 3,037 | 257 |
+| Cold full re-prefill | 3,113 | – | 13,463 |
+
+Wall clock for the 4 tips:
+
+- 4-way fan-out from restored tips: 3,413 ms (per rep: 3,356 / 3,413 / 3,447)
+- 4 sequential cold prefills: 56,908 ms — 16.7x slower
+- 4 parallel cold prefills: 57,470 ms — 16.8x slower
+
+Parallel cold was not faster than sequential on this 4-core CPU: prefill is compute-bound.
+
+Conditions: Oracle Cloud Ampere A1, 4 x Neoverse-N1 vCPU, 23.4 GiB RAM, CPU only. llama.cpp release b11719, Qwen2.5-0.5B-Instruct Q8_0 GGUF, `llama-server --parallel 4 -c 32768 --slot-save-path DIR --cache-ram 0 -t 4`, Node v22.23.2. `--cache-ram 0` disables llama-server's own RAM prompt cache, so every reused token comes from Lightning's restored checkpoint.
+
+Fidelity: cache_n + prompt_n of the restored run equals the cold prompt_n exactly (3,085 + 28 = 3,113), so the restored KV is token-identical to the re-rendered transcript — no chat-template drift for this model. At temperature 0, 7 of 12 fan-out replies were byte-identical to the sequential cold replies. The cold parallel run also differed from cold sequential on 5 of 12, so the differences come from batched CPU floating-point order, not from the restore.
+
+Cost: each saved slot file is about 12 KiB per token for this model — about 37 MB for a 3k-token branch. 28 files took 984 MB after the 3-rep run. Nothing garbage-collects them yet.
+
+What is still emulated:
+
+- `loadModel`, `freeze`, `thaw` and ephemeral consult
+- the branch store and checkpoint metadata are in memory (the KV files survive a crash; the tree does not)
+- no slot-file garbage collection
+- no streaming, so the demo reports server-side prompt_ms, not client time-to-first-token
+- one model on one CPU host; a slot pool larger than llama-server's `--parallel` is not possible, so fan-out width is capped by slots and extra requests wait
+
+To reproduce, see [With a real model](#with-a-real-model) below. Raw results: [`docs/results/kv-cache-cedar-b11719-20261018.json`](docs/results/kv-cache-cedar-b11719-20261018.json) ([.txt](docs/results/kv-cache-cedar-b11719-20261018.txt)). Demo source: [`src/examples/kv-cache-demo.ts`](src/examples/kv-cache-demo.ts).
 
 ## The inspector
 
-The API server also serves a small inspector at `/`: the branch tree with its thermal state, each branch's lineage, checkpoints and recent messages, the adapter's capability report, and a box to send a turn to any branch that is not frozen (frozen branches are read-only).
+The API server also serves a small inspector at `/`: the branch tree with its thermal state, each branch's lineage, checkpoints and recent messages, the adapter's capability report, and a box to send a turn to any branch that is not frozen (frozen branches are read-only). With native KV checkpoints, the cached-tokens tile says whether it is measured (llama-server's `timings.cache_n` for the last turn) or an estimate, and each checkpoint row has a "Continue from here" button that calls `POST /v1/checkpoints/:id/respond`.
 
 | Light | Dark |
 |---|---|
@@ -116,6 +153,15 @@ LIGHTNING_MODEL=/path/to/model.gguf npm run serve
 
 Lightning starts `llama-server` on `127.0.0.1:8080`, waits for it to become healthy, and serves its own API and the inspector on `http://127.0.0.1:8787`. To attach to a `llama.cpp` server you already run, set `LLAMA_CPP_BASE_URL=http://127.0.0.1:8080` instead. Other settings: `LLAMA_CPP_BINARY`, `LLAMA_CPP_HOST`, `LLAMA_CPP_PORT`, `LLAMA_CPP_ARGS`, `LLAMA_CPP_MANAGED=0|1`, `HOST`, `PORT`, `LIGHTNING_ALLOWED_HOSTS`.
 
+Native KV checkpoints need `llama-server` started with `--slot-save-path <dir> --parallel <N> --cache-ram 0`. In managed mode, `LLAMA_CPP_SLOT_SAVE_PATH` and `LLAMA_CPP_PARALLEL` pass the slot save path and `--parallel` for you; `--cache-ram 0` can go through `LLAMA_CPP_ARGS`. The adapter only reports the checkpoint operations as native when its startup probe succeeds.
+
+The KV-cache demo ([`src/examples/kv-cache-demo.ts`](src/examples/kv-cache-demo.ts)) measures branch continuation against cold prefill and refuses to run if KV checkpoints are not native:
+
+```bash
+npm run build && node dist/examples/kv-cache-demo.js --base-url http://127.0.0.1:8080 --branches 4 --reps 3 --out results.json
+npm run demo:kv -- --base-url http://127.0.0.1:8080
+```
+
 ```bash
 curl -s http://127.0.0.1:8787/v1/threads/demo/messages \
   -H 'content-type: application/json' \
@@ -136,14 +182,15 @@ Lightning grew out of [Candle](https://github.com/jon-vs-moloch/candle), a brows
 | [`src/backends/`](src/backends) | Fake adapter, `llama.cpp` adapter and `llama-server` process manager |
 | [`src/api/server.ts`](src/api/server.ts) | HTTP API and inspector route |
 | [`public/index.html`](public/index.html) | The inspector (one static file) |
-| [`src/examples/`](src/examples) | `npm run demo` and `npm run demo:ui` |
+| [`src/examples/`](src/examples) | `npm run demo`, `npm run demo:ui` and `npm run demo:kv` |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | The design |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Phases, with current status |
+| [`docs/results/`](docs/results) | Benchmark results, such as the KV-cache run |
 | [`docs/HANDOFF.md`](docs/HANDOFF.md) | The original continuation note |
 
 ## Status
 
-**Early scaffold and design essay.** The architecture is the point; the code is the first slice that makes it runnable. Phases 0 and 1 of the [roadmap](docs/ROADMAP.md) are done and Phase 2 is partly done. There is no streaming, no persistence and no native cache checkpointing yet.
+**Early scaffold and design essay.** The architecture is the point; the code is the first slice that makes it runnable. Phases 0 and 1 of the [roadmap](docs/ROADMAP.md) are done and Phase 2 is partly done. Native KV-cache checkpoints exist for `llama.cpp` via llama-server slot files. There is still no persistence and no streaming.
 
 ## License
 

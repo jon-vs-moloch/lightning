@@ -180,16 +180,21 @@ code, .mono { font-family: var(--mono); font-size: 12px; }
 .empty { color: var(--faint); font-size: 13px; padding: 8px 0; }
 
 .composer { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: end; }
+.composer[hidden] { display: none; }
 .composer textarea {
   resize: vertical; min-height: 44px; max-height: 200px; padding: 10px 12px; border-radius: 8px;
   border: 1px solid var(--border-strong); background: var(--surface);
 }
 .composer textarea:focus { outline: 2px solid color-mix(in srgb, var(--accent) 40%, transparent); outline-offset: 1px; border-color: var(--accent); }
+.composer .hint, .composer .error { grid-column: 1 / -1; margin-top: 0; }
 .btn {
   height: 44px; padding: 0 18px; border-radius: 8px; border: 0; cursor: pointer;
   background: var(--accent); color: var(--accent-ink); font-weight: 600;
 }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-small { height: auto; padding: 4px 10px; font-size: 12px; font-weight: 500; border-radius: 6px; }
+.btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+.btn-ghost:hover { border-color: var(--border-strong); color: var(--text); }
 .hint { margin-top: 8px; font-size: 12px; color: var(--faint); }
 .error { color: var(--hot); font-size: 13px; margin-top: 8px; }
 
@@ -343,6 +348,9 @@ code, .mono { font-family: var(--mono); font-size: 12px; }
     if (caps.checkpoint !== "native") {
       notice.hidden = false;
       notice.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex:none;margin-top:2px"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><span><strong>Checkpoints are ${esc(caps.checkpoint)}.</strong> Today a checkpoint is a message-level snapshot, not saved KV-cache state. Native cache checkpoints are the next phase of the roadmap.</span>`;
+    } else {
+      notice.hidden = false;
+      notice.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex:none;margin-top:2px"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><span><strong>Checkpoints are native.</strong> Each checkpoint is a saved llama.cpp slot KV file; continuing from one restores it into an idle slot so only the new turn is prefilled.</span>`;
     }
   }
 
@@ -392,6 +400,7 @@ code, .mono { font-family: var(--mono); font-size: 12px; }
     const children = state.branches.filter((c) => c.parentId === b.id);
     const frozen = b.temperature === "frozen";
     const checkpoints = b.checkpoints.slice().reverse();
+    const kvMeasured = thread.stats.cachedTokensSource === "measured";
     $("detail").innerHTML = `
       <div class="detail-head">
         <div class="row">
@@ -410,8 +419,8 @@ code, .mono { font-family: var(--mono); font-size: 12px; }
       <div class="stats">
         <div><b>${thread.stats.messageCount}</b><span>messages</span></div>
         <div><b>${thread.stats.checkpointCount}</b><span>checkpoints</span></div>
-        <div><b>${thread.stats.promptTokens ?? "—"}</b><span>prompt tokens</span></div>
-        <div><b>${thread.stats.cachedTokens ?? "—"}</b><span>cached tokens</span></div>
+        <div><b>${thread.stats.promptTokens ?? "—"}</b><span>${kvMeasured ? "prompt tokens · last turn" : "prompt tokens · estimate"}</span></div>
+        <div title="${kvMeasured ? "Measured by llama-server (timings.cache_n): prompt tokens reused from the restored KV checkpoint on the last turn." : "Heuristic (words × 1.3, hot branches only). Not measured; the adapter has no native KV checkpoints."}"><b>${thread.stats.cachedTokens ?? "—"}</b><span>${kvMeasured ? "reused KV tokens · last turn" : "cached tokens · estimate"}</span></div>
       </div>
       <div class="section">
         <h3>Checkpoints</h3>
@@ -420,7 +429,17 @@ code, .mono { font-family: var(--mono); font-size: 12px; }
             <span class="label">${esc(label(c))}${c.id === thread.headCheckpointId ? ` <span class="faint">· head</span>` : ""}</span>
             <span class="meta mono">${esc(c.id)}</span>
             <span class="meta">${ago(c.createdAt)}${c.summary ? ` · ${esc(c.summary)}` : ""}</span>
+            ${c.id !== thread.headCheckpointId && !frozen ? `<button class="btn btn-small continue" type="button" data-checkpoint="${esc(c.id)}">Continue from here</button>` : ""}
           </li>`).join("")}</ol>` : `<div class="empty">No checkpoints on this branch yet.</div>`}
+        <form class="composer" id="continueForm" hidden>
+          <textarea name="content" rows="2" placeholder="Reply continuing from this checkpoint"></textarea>
+          <div>
+            <button class="btn" type="submit">Send from checkpoint</button>
+            <button class="btn btn-ghost" type="button">Cancel</button>
+          </div>
+          <div class="hint" id="continueHint"></div>
+          <div class="error" id="continueError"></div>
+        </form>
       </div>
       <div class="section">
         <h3>Recent messages</h3>
@@ -438,11 +457,13 @@ code, .mono { font-family: var(--mono); font-size: 12px; }
         <div class="error" id="composerError"></div>
       </div>`;
     const form = $("composer");
+    const sendButton = form.querySelector("button");
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const content = form.content.value.trim();
       if (!content) return;
-      form.querySelector("button").disabled = true;
+      sendButton.disabled = true;
+      sendButton.textContent = "Generating…";
       try {
         await getJson(`/v1/threads/${encodeURIComponent(b.id)}/messages`, {
           method: "POST",
@@ -452,17 +473,58 @@ code, .mono { font-family: var(--mono); font-size: 12px; }
         await refresh();
       } catch (error) {
         $("composerError").textContent = error.message;
-        form.querySelector("button").disabled = false;
+        sendButton.disabled = false;
+        sendButton.textContent = "Send turn";
       }
     });
     form.content.addEventListener("keydown", (event) => {
       if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) form.requestSubmit();
+    });
+
+    const continueForm = $("continueForm");
+    continueForm.addEventListener("click", (event) => {
+      if (event.target.closest("button[type=\"button\"]")) {
+        continueForm.hidden = true;
+        $("continueError").textContent = "";
+      }
+    });
+    continueForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const content = continueForm.content.value.trim();
+      if (!content) return;
+      const submitButton = continueForm.querySelector("button[type=\"submit\"]");
+      submitButton.disabled = true;
+      submitButton.textContent = "Generating…";
+      try {
+        await getJson(`/v1/checkpoints/${encodeURIComponent(continueForm.dataset.checkpoint)}/respond`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ message: { content }, thread_id: b.id })
+        });
+        await refresh();
+      } catch (error) {
+        $("continueError").textContent = error.message;
+        submitButton.disabled = false;
+        submitButton.textContent = "Send from checkpoint";
+      }
     });
   }
 
   $("tree").addEventListener("click", (event) => {
     const button = event.target.closest(".node");
     if (button) location.hash = `branch=${encodeURIComponent(button.dataset.id)}`;
+  });
+  // Checkpoint rows are re-rendered with the detail card; delegate clicks from #detail.
+  $("detail").addEventListener("click", (event) => {
+    const button = event.target.closest("button.continue");
+    if (!button) return;
+    const form = $("continueForm");
+    if (!form) return;
+    form.dataset.checkpoint = button.dataset.checkpoint;
+    $("continueHint").textContent = `POST /v1/checkpoints/${button.dataset.checkpoint}/respond · continues from that checkpoint; the branch head moves to the new reply`;
+    $("continueError").textContent = "";
+    form.hidden = false;
+    form.content.focus();
   });
   addEventListener("hashchange", () => {
     selected = branchFromHash(selected);
@@ -475,7 +537,7 @@ code, .mono { font-family: var(--mono); font-size: 12px; }
   }
 
   refresh().catch(showError);
-  setInterval(() => { if (!document.hidden && !document.activeElement?.closest?.("#composer")) refresh().catch(() => {}); }, 5000);
+  setInterval(() => { if (!document.hidden && !document.activeElement?.closest?.("#composer, #continueForm")) refresh().catch(() => {}); }, 5000);
 })();
 </script>
 </body>

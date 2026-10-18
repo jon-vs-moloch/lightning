@@ -24,6 +24,9 @@ async function main(): Promise<void> {
     ? process.env.LLAMA_CPP_ARGS.split(/\s+/).filter(Boolean)
     : [];
   const managedMode = shouldManageLlamaCpp(externalBaseUrl, process.env.LLAMA_CPP_MANAGED);
+  const slotSavePath = process.env.LLAMA_CPP_SLOT_SAVE_PATH;
+  const parallelEnv = process.env.LLAMA_CPP_PARALLEL;
+  const parallel = parallelEnv === undefined ? undefined : Number(parallelEnv);
 
   let managedServer: ManagedLlamaCppServer | undefined;
   let baseUrl = externalBaseUrl ?? `http://${managedHost}:${managedPort}`;
@@ -40,6 +43,8 @@ async function main(): Promise<void> {
       modelPath: process.env.LIGHTNING_MODEL,
       host: managedHost,
       port: managedPort,
+      slotSavePath,
+      parallel,
       extraArgs: managedArgs
     });
 
@@ -48,12 +53,19 @@ async function main(): Promise<void> {
   }
 
   const runtime = new LightningRuntime();
-  runtime.registerAdapter(
-    new LlamaCppAdapter({
-      baseUrl,
-      defaultModelRef: modelRef
-    })
-  );
+  const adapter = new LlamaCppAdapter({
+    baseUrl,
+    defaultModelRef: modelRef
+  });
+  runtime.registerAdapter(adapter);
+
+  const kv = await adapter.probeKvSupport();
+  console.log(`llama.cpp KV checkpoints: ${kv.mode} (${kv.reason})`);
+  if (kv.mode === "emulated") {
+    console.warn(
+      "Checkpoints, restore and prefix reuse are EMULATED (message snapshots); start llama-server with --slot-save-path and --parallel N for native KV checkpoints."
+    );
+  }
 
   const server = createLightningApiServer({
     runtime,

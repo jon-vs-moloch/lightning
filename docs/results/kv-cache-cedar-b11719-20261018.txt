@@ -1,0 +1,30 @@
+Lightning KV cache demo — llama-server branch continuation vs cold prefill
+  base url          http://127.0.0.1:18431
+  build info        b11719-5aeac37a3
+  model path        .../qwen2.5-0.5b-instruct-q8_0.gguf
+  total slots       4
+  n_ctx per slot    8192
+  branches (M)      4
+  reps              3
+  label             Cedar OCI Ampere A1 (Neoverse-N1) 4 vCPU, CPU only; llama-server b11719 ubuntu-arm64 release; qwen2.5-0.5b-instruct-q8_0; flags: --parallel 4 -c 32768 --slot-save-path DIR --cache-ram 0 -t 4
+  node              v22.23.2
+  host              redacted (OCI Ampere A1 VM)
+  cpu               4 x Neoverse-N1
+  memory            23.4 GiB
+  started           2026-10-18T22:02:08.138Z
+  finished          2026-10-18T22:08:52.269Z
+
+scenario                          prompt_n (evaluated)cache_n (reused)prompt_ms   
+restored continuation (per tip)                 28            3085       668.3
+cold re-prefill (per tip)                     3113-                    13462.6
+fork turn from trunk (per tip)                  22            3037       256.7
+
+M-way fan-out (restored, parallel)           3413 ms  [per rep: 3356, 3413, 3447]
+M sequential cold prefills                  56908 ms  [per rep: 56908, 57150, 56847]
+M parallel cold prefills                    57470 ms  [per rep: 57050, 57470, 57557]
+speedup vs sequential cold           16.7x
+speedup vs parallel cold             16.8x
+
+replies identical to cold sequential: [rep 1] false, false, true, true  [rep 2] false, false, true, true  [rep 3] false, true, true, true
+
+Results written to docs/results/kv-cache-cedar-b11719-20261018.json
