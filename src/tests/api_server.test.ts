@@ -331,3 +331,180 @@ test("root serves the inspector page", async () => {
     await harness.close();
   }
 });
+
+test("frozen branches refuse turns, pins and checkpoint responses until thawed", async () => {
+  const harness = await startTestServer();
+
+  try {
+    const beforeResponse = await fetch(`${harness.baseUrl}/v1/threads/frozen-demo/messages`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        message: {
+          content: "Before freezing"
+        }
+      })
+    });
+
+    const beforePayload = (await beforeResponse.json()) as { headCheckpointId?: string };
+    assert.equal(beforeResponse.status, 200);
+    assert.ok(beforePayload.headCheckpointId);
+
+    await harness.runtime.freezeBranch("frozen-demo");
+
+    const frozenTurnResponse = await fetch(`${harness.baseUrl}/v1/threads/frozen-demo/messages`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        message: {
+          content: "After freezing"
+        }
+      })
+    });
+
+    const frozenTurnPayload = (await frozenTurnResponse.json()) as { error?: string };
+    assert.equal(frozenTurnResponse.status, 409);
+    assert.match(frozenTurnPayload.error ?? "", /frozen/);
+
+    const frozenChatResponse = await fetch(`${harness.baseUrl}/v1/chat/completions`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "fake-echo-v1",
+        thread_id: "frozen-demo",
+        messages: [
+          { role: "user", content: "Before freezing" },
+          { role: "assistant", content: "x" },
+          { role: "user", content: "Compat turn" }
+        ]
+      })
+    });
+    await frozenChatResponse.json();
+    assert.equal(frozenChatResponse.status, 409);
+
+    const frozenPinResponse = await fetch(`${harness.baseUrl}/v1/threads/frozen-demo/pin`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        messages: [{ role: "user", content: "Replaced" }]
+      })
+    });
+    await frozenPinResponse.json();
+    assert.equal(frozenPinResponse.status, 409);
+
+    const frozenRespondResponse = await fetch(
+      `${harness.baseUrl}/v1/checkpoints/${beforePayload.headCheckpointId}/respond`,
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+          thread_id: "frozen-demo",
+          message: {
+            content: "From checkpoint"
+          }
+        })
+      }
+    );
+    await frozenRespondResponse.json();
+    assert.equal(frozenRespondResponse.status, 409);
+
+    assert.equal(harness.runtime.getMessages("frozen-demo").length, 2);
+    assert.equal(harness.runtime.getBranch("frozen-demo").temperature, "frozen");
+
+    await harness.runtime.thawBranch("frozen-demo");
+
+    const thawedResponse = await fetch(`${harness.baseUrl}/v1/threads/frozen-demo/messages`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        message: {
+          content: "After thawing"
+        }
+      })
+    });
+
+    await thawedResponse.json();
+    assert.equal(thawedResponse.status, 200);
+    assert.equal(harness.runtime.getMessages("frozen-demo").length, 4);
+  } finally {
+    await harness.close();
+  }
+});
+
+test("POST bodies must be JSON and at most 1 MiB", async () => {
+  const harness = await startTestServer();
+
+  try {
+    const plainResponse = await fetch(`${harness.baseUrl}/v1/threads/plain-demo/messages`, {
+      method: "POST",
+      headers: {
+        "content-type": "text/plain"
+      },
+      body: JSON.stringify({
+        message: {
+          content: "hi"
+        }
+      })
+    });
+
+    await plainResponse.json();
+    assert.equal(plainResponse.status, 415);
+    assert.throws(() => harness.runtime.getBranch("plain-demo"));
+
+    const bigResponse = await fetch(`${harness.baseUrl}/v1/threads/big-demo/messages`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        message: {
+          content: "x".repeat(1024 * 1024 + 1)
+        }
+      })
+    });
+
+    await bigResponse.json();
+    assert.equal(bigResponse.status, 413);
+    assert.throws(() => harness.runtime.getBranch("big-demo"));
+
+    const badJsonResponse = await fetch(`${harness.baseUrl}/v1/threads/bad-json-demo/messages`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: "{not json"
+    });
+
+    await badJsonResponse.json();
+    assert.equal(badJsonResponse.status, 400);
+
+    const charsetResponse = await fetch(`${harness.baseUrl}/v1/threads/charset-demo/messages`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json; charset=utf-8"
+      },
+      body: JSON.stringify({
+        message: {
+          content: "charset ok"
+        }
+      })
+    });
+
+    await charsetResponse.json();
+    assert.equal(charsetResponse.status, 200);
+  } finally {
+    await harness.close();
+  }
+});

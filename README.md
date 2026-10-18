@@ -53,6 +53,7 @@ A small, typed, tested TypeScript scaffold (about 3k lines, no runtime dependenc
   - checkpoint-native turns: `POST /v1/checkpoints/:id/respond`, `GET /v1/checkpoints/:id`;
   - an OpenAI-compatible `POST /v1/chat/completions`. Pass a `thread_id` and Lightning dedupes the prefix it already has, then appends only the new suffix;
   - `GET /v1/branches` and a branch inspector page at `/`.
+  - POST bodies must be `content-type: application/json` and at most 1 MiB (otherwise `415` or `413`). A frozen branch is read-only: turns, pins and checkpoint responses on it get `409` until it is thawed.
 
 What is honest to say about it today: checkpoints are in memory, and every adapter, `llama.cpp` included, emulates them at the message level. Native KV-cache checkpoints, persistence and successor compaction are the next phases. Streaming is not implemented.
 

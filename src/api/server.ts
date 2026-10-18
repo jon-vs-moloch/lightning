@@ -71,12 +71,25 @@ interface ThreadPinRequest {
   checkpoint_summary?: string;
 }
 
+/** Largest request body the API accepts, in bytes. Larger bodies are refused with 413 and never buffered whole. */
+const MAX_BODY_BYTES = 1024 * 1024;
+
+/** An error whose HTTP status the server answers with (every other error is a 500). */
+class HttpError extends Error {
+  readonly statusCode: number;
+
+  constructor(statusCode: number, message: string) {
+    super(message);
+    this.statusCode = statusCode;
+  }
+}
+
 export function createLightningApiServer(options: LightningApiServerOptions) {
   const server = createServer(async (req, res) => {
     try {
       await routeRequest(req, res, options);
     } catch (error) {
-      writeJson(res, 500, {
+      writeJson(res, error instanceof HttpError ? error.statusCode : 500, {
         error: error instanceof Error ? error.message : "Unexpected server error"
       });
     }
@@ -173,6 +186,7 @@ async function handleThreadMessage(
   body: ThreadMessageRequest,
   options: LightningApiServerOptions
 ) {
+  assertBranchWritable(threadId, options);
   await ensureBranch(threadId, body.branch, options);
 
   await options.runtime.appendMessages(threadId, [
@@ -245,6 +259,7 @@ async function handleChatCompletion(
     }
   }
 
+  assertBranchWritable(persistentThreadId, options);
   await ensureBranch(
     persistentThreadId,
     {
@@ -279,6 +294,7 @@ async function handleCheckpointRespond(
   body: CheckpointRespondRequest,
   options: LightningApiServerOptions
 ) {
+  assertBranchWritable(options.runtime.getCheckpoint(checkpointId).branchId, options);
   const result = await options.runtime.respondFromCheckpoint(
     checkpointId,
     {
@@ -373,6 +389,7 @@ async function handleThreadPin(
   body: ThreadPinRequest,
   options: LightningApiServerOptions
 ) {
+  assertBranchWritable(threadId, options);
   const modelRef = body.model ?? options.defaultModelRef;
   const branchConfig = {
     title: body.branch?.title ?? `Thread ${threadId}`,
@@ -421,6 +438,19 @@ async function handleThreadPin(
     stats: await options.runtime.branchStats(threadId),
     recentMessages: options.runtime.getMessages(threadId).slice(-20)
   };
+}
+
+/** Frozen branches are read-only: refuse any request that would add a turn to, rewind or replace one. Unknown ids pass (the route creates the branch). */
+function assertBranchWritable(branchId: string, options: LightningApiServerOptions): void {
+  let branch: BranchRecord;
+  try {
+    branch = options.runtime.getBranch(branchId);
+  } catch {
+    return;
+  }
+  if (branch.temperature === "frozen") {
+    throw new HttpError(409, `Branch ${branchId} is frozen and read-only. Thaw it before sending it a turn.`);
+  }
 }
 
 async function ensureBranch(
@@ -529,13 +559,46 @@ function toOpenAiChatCompletion(
 }
 
 async function readJson(req: IncomingMessage): Promise<unknown> {
+  const contentType = String(req.headers["content-type"] ?? "").split(";")[0].trim().toLowerCase();
+  if (contentType !== "application/json") {
+    throw new HttpError(415, "Request body must be JSON: send content-type: application/json.");
+  }
+
+  const contentLength = Number(req.headers["content-length"] ?? "");
+  if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
+    throw new HttpError(413, `Request body is larger than ${MAX_BODY_BYTES} bytes.`);
+  }
+
   const chunks: Buffer[] = [];
+  let totalBytes = 0;
+  let tooLarge = false;
   for await (const chunk of req) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    totalBytes += buffer.length;
+    if (totalBytes > MAX_BODY_BYTES) {
+      tooLarge = true;
+      chunks.length = 0;
+      continue;
+    }
+    if (!tooLarge) {
+      chunks.push(buffer);
+    }
+  }
+
+  if (tooLarge) {
+    throw new HttpError(413, `Request body is larger than ${MAX_BODY_BYTES} bytes.`);
   }
 
   const body = Buffer.concat(chunks).toString("utf8");
-  return body ? JSON.parse(body) : {};
+  if (!body) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(body);
+  } catch {
+    throw new HttpError(400, "Request body is not valid JSON.");
+  }
 }
 
 function writeJson(res: ServerResponse, statusCode: number, payload: unknown): void {
