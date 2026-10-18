@@ -794,3 +794,157 @@ test("only loopback and configured Host headers are answered (DNS-rebinding defe
     await configured.close();
   }
 });
+
+test("unknown threads get 404 and malformed pin and chat bodies get 400 (R-01..R-03)", async () => {
+  const harness = await startTestServer();
+
+  try {
+    const inspectResponse = await fetch(`${harness.baseUrl}/v1/threads/no-such-thread`);
+    const inspectPayload = (await inspectResponse.json()) as { error?: string };
+    assert.equal(
+      inspectResponse.status,
+      404,
+      `get unknown thread must answer 404, got body ${JSON.stringify(inspectPayload)}`
+    );
+    assert.match(inspectPayload.error ?? "", /Unknown thread/);
+
+    const pinCases = [
+      "{}",
+      "null",
+      JSON.stringify({ messages: "hello" }),
+      JSON.stringify({ messages: [{ role: "user" }] }),
+      JSON.stringify({ messages: [null] })
+    ];
+    for (const pinBody of pinCases) {
+      const pinResponse = await fetch(`${harness.baseUrl}/v1/threads/pin-bad/pin`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: pinBody
+      });
+      const pinPayload = (await pinResponse.json()) as { error?: string };
+      assert.equal(
+        pinResponse.status,
+        400,
+        `pin body ${pinBody} must answer 400, got body ${JSON.stringify(pinPayload)}`
+      );
+    }
+    assert.throws(() => harness.runtime.getBranch("pin-bad"));
+
+    const chatCases = [
+      JSON.stringify({ messages: [] }),
+      "{}",
+      "null",
+      JSON.stringify({ thread_id: "chat-bad", messages: [] }),
+      JSON.stringify({ thread_id: "chat-bad", messages: [{ role: "user", content: 5 }] })
+    ];
+    for (const chatBody of chatCases) {
+      const chatResponse = await fetch(`${harness.baseUrl}/v1/chat/completions`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: chatBody
+      });
+      const chatPayload = (await chatResponse.json()) as { error?: string };
+      assert.equal(
+        chatResponse.status,
+        400,
+        `chat body ${chatBody} must answer 400, got body ${JSON.stringify(chatPayload)}`
+      );
+    }
+    assert.throws(() => harness.runtime.getBranch("chat-bad"));
+    assert.equal(harness.runtime.listBranches().length, 0);
+
+    const emptyPinResponse = await fetch(`${harness.baseUrl}/v1/threads/pin-empty/pin`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ messages: [] })
+    });
+    const emptyPinPayload = (await emptyPinResponse.json()) as { headCheckpointId?: string };
+    assert.equal(
+      emptyPinResponse.status,
+      200,
+      `empty pin must answer 200, got body ${JSON.stringify(emptyPinPayload)}`
+    );
+    assert.ok(emptyPinPayload.headCheckpointId);
+  } finally {
+    await harness.close();
+  }
+});
+
+test("a port-mapped loopback Host is answered only when configured (R-04)", async () => {
+  const open: Array<() => Promise<void>> = [];
+
+  try {
+    const mapped = await startTestServer({ allowedHosts: ["localhost"] });
+    open.push(mapped.close);
+    const mappedPort = mapped.port + 1;
+
+    const mappedCases: Array<[string, number]> = [
+      [`localhost:${mappedPort}`, 200],
+      ["localhost", 200],
+      [`LOCALHOST:${mappedPort}`, 200],
+      [`localhost:${mapped.port}`, 200],
+      [`127.0.0.1:${mappedPort}`, 403],
+      [`[::1]:${mappedPort}`, 403],
+      [`evil.example:${mappedPort}`, 403]
+    ];
+
+    for (const [host, expectedStatus] of mappedCases) {
+      const response = await rawRequest({
+        port: mapped.port,
+        method: "GET",
+        path: "/v1/branches",
+        headers: { host }
+      });
+      assert.equal(response.status, expectedStatus, `host ${host} must answer ${expectedStatus}`);
+    }
+
+    const entries = await startTestServer({
+      allowedHosts: ["localhost:9000", "Proxy.Example:8443", "bad:entry:x", ""]
+    });
+    open.push(entries.close);
+
+    const entryCases: Array<[string, number]> = [
+      ["localhost:9000", 200],
+      ["localhost:9001", 403],
+      ["localhost", 403],
+      [`127.0.0.1:${entries.port}`, 200],
+      ["proxy.example:8443", 200],
+      ["proxy.example:8444", 403],
+      ["proxy.example", 403],
+      [`bad:${entries.port}`, 403],
+      ["entry", 403]
+    ];
+
+    for (const [host, expectedStatus] of entryCases) {
+      const response = await rawRequest({
+        port: entries.port,
+        method: "GET",
+        path: "/v1/branches",
+        headers: { host }
+      });
+      assert.equal(response.status, expectedStatus, `host ${host} must answer ${expectedStatus}`);
+    }
+
+    const explicit = await startTestServer({ allowedHosts: ["lan.example:80"] });
+    open.push(explicit.close);
+
+    const portCases: Array<[string, number]> = [
+      ["lan.example", 200],
+      ["lan.example:8080", 403]
+    ];
+
+    for (const [host, expectedStatus] of portCases) {
+      const response = await rawRequest({
+        port: explicit.port,
+        method: "GET",
+        path: "/v1/branches",
+        headers: { host }
+      });
+      assert.equal(response.status, expectedStatus, `host ${host} must answer ${expectedStatus}`);
+    }
+  } finally {
+    for (const close of open) {
+      await close();
+    }
+  }
+});

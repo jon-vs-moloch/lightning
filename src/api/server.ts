@@ -11,9 +11,11 @@ export interface LightningApiServerOptions {
   defaultModelRef: string;
 
   /**
-   * Extra Host-header names the server answers to, besides localhost, 127.0.0.1 and [::1].
-   * Each entry is a hostname (case-insensitive, IPv6 in brackets) and matches with any port or none,
-   * for example a LAN name or a reverse proxy's public name. Every other Host is refused with 403.
+   * Extra Host-header values the server answers to, besides localhost, 127.0.0.1 and [::1] on its own port.
+   * Each entry is `host` (matches with any port or none) or `host:port` (matches only that port; no port in
+   * the Host header means 80). Hostnames are case-insensitive and IPv6 goes in brackets. Entries that cannot
+   * be parsed are ignored. Loopback names arriving on another port (for example a container's 8787 published
+   * as localhost:9000) are also checked against this list. Every other Host is refused with 403.
    */
   allowedHosts?: string[];
 }
@@ -91,7 +93,7 @@ class HttpError extends Error {
   }
 }
 
-/** Loopback names always accepted in the Host header, but only with the port the request arrived on. */
+/** Loopback names always accepted in the Host header with the port the request arrived on; with any other port only when `allowedHosts` lists them. */
 const LOOPBACK_HOSTNAMES = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
 /** Split a Host header into a lower-cased hostname (IPv6 keeps its brackets) and an optional port string. Returns undefined when it cannot be parsed. */
@@ -140,13 +142,37 @@ function isAllowedHost(req: IncomingMessage, options: LightningApiServerOptions)
     return false;
   }
 
-  if (LOOPBACK_HOSTNAMES.has(parsed.hostname)) {
-    const effectivePort = parsed.port ?? "80";
-    return effectivePort === String(req.socket.localPort);
+  if (
+    LOOPBACK_HOSTNAMES.has(parsed.hostname) &&
+    (parsed.port ?? "80") === String(req.socket.localPort)
+  ) {
+    return true;
   }
 
-  const allowed = options.allowedHosts ?? [];
-  return allowed.some((entry) => entry.trim().toLowerCase() === parsed.hostname);
+  return matchesAllowedHost(parsed, options.allowedHosts ?? []);
+}
+
+/** True when an explicitly configured entry names this Host: `host` matches any port, `host:port` only that port (no port in the header means 80). Unparseable entries match nothing. */
+function matchesAllowedHost(
+  parsed: { hostname: string; port?: string },
+  allowedHosts: string[]
+): boolean {
+  for (const entry of allowedHosts) {
+    const allowed = parseHostHeader(entry);
+    if (!allowed) {
+      continue;
+    }
+    if (allowed.hostname !== parsed.hostname) {
+      continue;
+    }
+    if (allowed.port === undefined) {
+      return true;
+    }
+    if (allowed.port === (parsed.port ?? "80")) {
+      return true;
+    }
+  }
+  return false;
 }
 
 export function createLightningApiServer(options: LightningApiServerOptions) {
@@ -290,13 +316,14 @@ async function handleChatCompletion(
   body: ChatCompletionsRequest,
   options: LightningApiServerOptions
 ) {
+  const incomingMessages = requireMessageArray(
+    body,
+    false,
+    "Chat completions need a non-empty messages array of objects with string role and content."
+  );
+
   if (body.stream) {
     throw new Error("Streaming is not implemented yet.");
-  }
-
-  const incomingMessages = body.messages ?? [];
-  if (incomingMessages.length === 0) {
-    throw new Error("Chat completions require at least one message.");
   }
 
   const persistentThreadId = getThreadId(body);
@@ -434,7 +461,7 @@ function loadInspectorPage(): string | null {
 }
 
 async function handleThreadInspect(threadId: string, options: LightningApiServerOptions) {
-  const branch = options.runtime.getBranch(threadId);
+  const branch = requireBranch(threadId, options);
   const stats = await options.runtime.branchStats(threadId);
   const messages = options.runtime.getMessages(threadId);
   const headCheckpointId = options.runtime.getThreadHead(threadId);
@@ -469,6 +496,12 @@ async function handleThreadPin(
   body: ThreadPinRequest,
   options: LightningApiServerOptions
 ) {
+  const messages = requireMessageArray(
+    body,
+    true,
+    "Pin requests need a messages array of objects with string role and content."
+  );
+
   assertBranchWritable(threadId, options);
   const modelRef = body.model ?? options.defaultModelRef;
   const branchConfig = {
@@ -480,7 +513,7 @@ async function handleThreadPin(
     metadata: body.branch?.metadata
   };
 
-  const appendableMessages = body.messages.map((message) => ({
+  const appendableMessages = messages.map((message) => ({
     role: message.role,
     content: message.content,
     metadata: message.metadata
@@ -547,6 +580,46 @@ function requireMessage(body: unknown): {
   };
 }
 
+/** Pin and chat-completion bodies need `messages` as an array of objects with string role and content; anything else is a 400, not a crash. */
+function requireMessageArray(
+  body: unknown,
+  allowEmpty: boolean,
+  errorMessage: string
+): Array<{
+  role: MessageRecord["role"];
+  content: string;
+  metadata?: Record<string, unknown>;
+}> {
+  if (typeof body !== "object" || body === null) {
+    throw new HttpError(400, errorMessage);
+  }
+
+  const messages = (body as Record<string, unknown>).messages;
+  if (!Array.isArray(messages)) {
+    throw new HttpError(400, errorMessage);
+  }
+
+  if (messages.length === 0 && !allowEmpty) {
+    throw new HttpError(400, errorMessage);
+  }
+
+  for (const message of messages) {
+    if (typeof message !== "object" || message === null) {
+      throw new HttpError(400, errorMessage);
+    }
+    const record = message as Record<string, unknown>;
+    if (typeof record.role !== "string" || typeof record.content !== "string") {
+      throw new HttpError(400, errorMessage);
+    }
+  }
+
+  return messages as Array<{
+    role: MessageRecord["role"];
+    content: string;
+    metadata?: Record<string, unknown>;
+  }>;
+}
+
 /** Look up a checkpoint, answering 404 for an unknown id instead of a 500. */
 function requireCheckpoint(
   checkpointId: string,
@@ -556,6 +629,15 @@ function requireCheckpoint(
     return options.runtime.getCheckpoint(checkpointId);
   } catch {
     throw new HttpError(404, `Unknown checkpoint: ${checkpointId}`);
+  }
+}
+
+/** Look up a thread's branch, answering 404 for an unknown id instead of a 500. */
+function requireBranch(threadId: string, options: LightningApiServerOptions): BranchRecord {
+  try {
+    return options.runtime.getBranch(threadId);
+  } catch {
+    throw new HttpError(404, `Unknown thread: ${threadId}`);
   }
 }
 
