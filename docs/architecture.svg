@@ -1,0 +1,157 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" width="1200" height="720" role="img" aria-labelledby="t d">
+  <title id="t">Lightning architecture</title>
+  <desc id="d">A tree of branches stratified by write frequency: elder, project and lane layers, each branch hot, warm, cold or frozen. Turns continue from a checkpoint instead of replaying a transcript. Dashed elements are planned, not built.</desc>
+  <style>
+    svg { --bg:#fbfbfc; --frame:#e2e5ea; --band:#f2f4f7; --text:#14171f; --muted:#5b6270; --faint:#8a919e;
+          --edge:#9aa1ad; --node:#ffffff; --node-stroke:#d5dae2; --accent:#5b4cf0; --accent-soft:#eeecfe;
+          --hot:#e5484d; --warm:#d97706; --cold:#3b82f6; --frozen:#64809a; }
+    @media (prefers-color-scheme: dark) {
+      svg { --bg:#0f1218; --frame:#242935; --band:#151922; --text:#e8eaf0; --muted:#a0a7b4; --faint:#6f7785;
+            --edge:#5b6271; --node:#1a1e27; --node-stroke:#2c3241; --accent:#8b7dff; --accent-soft:#221f3d;
+            --hot:#ff6369; --warm:#ffa94d; --cold:#6ea8ff; --frozen:#a7bccd; }
+    }
+    text { font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--text); }
+    .mono { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .h1 { font-size: 24px; font-weight: 650; letter-spacing: -0.01em; }
+    .sub { font-size: 15px; fill: var(--muted); }
+    .cap { font-size: 11px; font-weight: 600; letter-spacing: .08em; fill: var(--muted); }
+    .small { font-size: 12px; fill: var(--muted); }
+    .faint { fill: var(--faint); }
+    .node rect.box { fill: var(--node); stroke: var(--node-stroke); }
+    .node .title { font-size: 14px; font-weight: 600; }
+    .node .meta { font-size: 11.5px; fill: var(--muted); }
+    .edge { fill: none; stroke: var(--edge); stroke-width: 1.5; }
+    .planned { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 5 5; }
+    .hot { fill: var(--hot); } .warm { fill: var(--warm); } .cold { fill: var(--cold); } .frozen { fill: var(--frozen); }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10z" style="fill: var(--edge)"/>
+    </marker>
+    <marker id="arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10z" style="fill: var(--accent)"/>
+    </marker>
+  </defs>
+
+  <rect x="0.5" y="0.5" width="1199" height="719" rx="16" style="fill: var(--bg); stroke: var(--frame)"/>
+
+  <!-- Title -->
+  <text x="40" y="52" class="h1">Context as a checkpoint you continue from</text>
+  <text x="40" y="78" class="sub">A tree of branches, stratified by how often they are written, so fast churn never invalidates slow state.</text>
+
+  <!-- Loop comparison -->
+  <g>
+    <rect x="40" y="100" width="540" height="58" rx="10" style="fill: var(--band); stroke: var(--frame)"/>
+    <text x="58" y="122" class="cap">USUAL CHAT LOOP</text>
+    <text x="58" y="146" class="mono" style="font-size:14px; fill: var(--muted)">transcript + request → model → response</text>
+    <rect x="620" y="100" width="540" height="58" rx="10" style="fill: var(--accent-soft); stroke: var(--accent)"/>
+    <text x="638" y="122" class="cap" style="fill: var(--accent)">LIGHTNING</text>
+    <text x="638" y="146" class="mono" style="font-size:14px">request + checkpoint → model → response + next checkpoint</text>
+  </g>
+
+  <!-- Bands -->
+  <g>
+    <rect x="40" y="184" width="1120" height="92" rx="10" style="fill: var(--band)"/>
+    <text x="58" y="222" class="cap">ELDER</text>
+    <text x="58" y="242" class="small">slow writes · compressed</text>
+    <rect x="40" y="284" width="1120" height="92" rx="10" style="fill: var(--band)"/>
+    <text x="58" y="322" class="cap">PROJECT</text>
+    <text x="58" y="342" class="small">mid-frequency state</text>
+    <rect x="40" y="384" width="1120" height="184" rx="10" style="fill: var(--band)"/>
+    <text x="58" y="422" class="cap">LANES</text>
+    <text x="58" y="442" class="small">hot · append-heavy</text>
+  </g>
+
+  <!-- Edges (parent → child) -->
+  <path class="edge" d="M610 254 V306" marker-end="url(#arrow)"/>
+  <path class="edge" d="M610 354 V406" marker-end="url(#arrow)"/>
+  <path class="edge" d="M700 330 H818" marker-end="url(#arrow)"/>
+  <text x="726" y="320" class="small">fork</text>
+  <path class="edge" d="M580 454 C580 476 420 470 420 494" marker-end="url(#arrow)"/>
+  <path class="edge" d="M640 454 C640 476 800 470 800 494" marker-end="url(#arrow)"/>
+  <text x="456" y="476" class="small">fork</text>
+  <text x="732" y="476" class="small">fork</text>
+
+  <!-- Planned: succession and upward passes -->
+  <path class="planned" d="M432 230 H516" marker-end="url(#arrow-accent)"/>
+  <text x="440" y="220" class="small" style="fill: var(--accent)">successor</text>
+  <path class="planned" d="M520 438 C470 430 470 340 516 336" marker-end="url(#arrow-accent)"/>
+  <path class="planned" d="M520 326 C470 318 470 244 516 240" marker-end="url(#arrow-accent)"/>
+  <text x="250" y="352" class="small" style="fill: var(--accent)">summaries flow up</text>
+  <text x="250" y="368" class="small" style="fill: var(--accent)">(upward passes)</text>
+
+  <!-- Nodes -->
+  <g class="node">
+    <rect class="box" x="250" y="206" width="180" height="48" rx="8"/>
+    <rect x="250" y="206" width="4" height="48" rx="2" class="frozen"/>
+    <circle cx="270" cy="224" r="4" class="frozen"/>
+    <text x="282" y="228" class="title">Elder · Q1</text>
+    <text x="266" y="246" class="meta">frozen · archived</text>
+  </g>
+  <g class="node">
+    <rect class="box" x="520" y="206" width="180" height="48" rx="8"/>
+    <rect x="520" y="206" width="4" height="48" rx="2" class="cold"/>
+    <circle cx="540" cy="224" r="4" class="cold"/>
+    <text x="552" y="228" class="title">Elder · Q2</text>
+    <text x="536" y="246" class="meta">cold · consulted</text>
+  </g>
+  <g class="node">
+    <rect class="box" x="520" y="306" width="180" height="48" rx="8"/>
+    <rect x="520" y="306" width="4" height="48" rx="2" class="warm"/>
+    <circle cx="540" cy="324" r="4" class="warm"/>
+    <text x="552" y="328" class="title">Project</text>
+    <text x="536" y="346" class="meta">warm · goals, decisions</text>
+  </g>
+  <g class="node">
+    <rect class="box" x="820" y="306" width="180" height="48" rx="8"/>
+    <rect x="820" y="306" width="4" height="48" rx="2" class="cold"/>
+    <circle cx="840" cy="324" r="4" class="cold"/>
+    <text x="852" y="328" class="title">Research</text>
+    <text x="836" y="346" class="meta">cold · sleeping</text>
+  </g>
+  <g class="node">
+    <rect class="box" x="520" y="406" width="180" height="48" rx="8"/>
+    <rect x="520" y="406" width="4" height="48" rx="2" class="hot"/>
+    <circle cx="540" cy="424" r="4" class="hot"/>
+    <text x="552" y="428" class="title">Chat</text>
+    <text x="536" y="446" class="meta">hot · user-facing</text>
+  </g>
+  <g class="node">
+    <rect class="box" x="330" y="494" width="180" height="48" rx="8"/>
+    <rect x="330" y="494" width="4" height="48" rx="2" class="hot"/>
+    <circle cx="350" cy="512" r="4" class="hot"/>
+    <text x="362" y="516" class="title">Subagent</text>
+    <text x="346" y="534" class="meta">absorbs churn, returns less</text>
+  </g>
+  <g class="node">
+    <rect class="box" x="710" y="494" width="180" height="48" rx="8"/>
+    <rect x="710" y="494" width="4" height="48" rx="2" class="warm"/>
+    <circle cx="730" cy="512" r="4" class="warm"/>
+    <text x="742" y="516" class="title">Background</text>
+    <text x="726" y="534" class="meta">warm · long-horizon</text>
+  </g>
+
+  <!-- Checkpoint chain on the chat lane -->
+  <g>
+    <path class="edge" d="M736 430 H812"/>
+    <circle cx="742" cy="430" r="5" style="fill: var(--node); stroke: var(--edge); stroke-width: 1.5"/>
+    <circle cx="774" cy="430" r="5" style="fill: var(--node); stroke: var(--edge); stroke-width: 1.5"/>
+    <circle cx="806" cy="430" r="6" style="fill: var(--accent)"/>
+    <circle cx="806" cy="430" r="10" style="fill: none; stroke: var(--accent); stroke-width: 1.5"/>
+    <text x="826" y="426" class="small" style="fill: var(--text); font-weight: 600">checkpoints</text>
+    <text x="826" y="442" class="small">each turn continues from the head</text>
+  </g>
+
+  <!-- Legend -->
+  <g>
+    <line x1="40" y1="596" x2="1160" y2="596" style="stroke: var(--frame)"/>
+    <circle cx="48" cy="626" r="5" class="hot"/><text x="60" y="630" class="small">hot</text>
+    <circle cx="108" cy="626" r="5" class="warm"/><text x="120" y="630" class="small">warm</text>
+    <circle cx="176" cy="626" r="5" class="cold"/><text x="188" y="630" class="small">cold</text>
+    <circle cx="240" cy="626" r="5" class="frozen"/><text x="252" y="630" class="small">frozen</text>
+    <line x1="340" y1="626" x2="380" y2="626" class="edge"/><text x="390" y="630" class="small">built</text>
+    <line x1="450" y1="626" x2="490" y2="626" class="planned"/><text x="500" y="630" class="small">planned</text>
+    <text x="40" y="664" class="small"><tspan style="fill: var(--text); font-weight: 600">Built today:</tspan> branches, forks, freeze/thaw, message-level checkpoints and a thermal planner, in memory, with a llama.cpp backend.</text>
+    <text x="40" y="686" class="small"><tspan style="fill: var(--text); font-weight: 600">Next:</tspan> native KV-cache checkpoints, persistence, successor compaction and upward passes.</text>
+  </g>
+</svg>

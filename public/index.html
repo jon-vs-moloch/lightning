@@ -280,6 +280,11 @@ code, .mono { font-family: var(--mono); font-size: 12px; }
   const TEMPS = ["hot", "warm", "cold", "frozen"];
   const $ = (id) => document.getElementById(id);
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  // Server-generated labels look like "turn-1792291584906"; show them as "turn · 14:02".
+  const label = (c) => {
+    const m = /^(.*)-(\d{13})$/.exec(c.label || "");
+    return m ? `${m[1]} · ${new Date(Number(m[2])).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : (c.label || c.id);
+  };
   const ago = (iso) => {
     const s = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
     return s < 60 ? `${s}s ago` : s < 3600 ? `${Math.round(s / 60)}m ago` : `${Math.round(s / 3600)}h ago`;
@@ -387,7 +392,7 @@ code, .mono { font-family: var(--mono); font-size: 12px; }
         <div class="row">
           <span class="chip t t-${esc(b.temperature)}"><span class="dot"></span>${esc(b.temperature)}</span>
           <span class="tag">${esc(b.kind)}</span>
-          <span class="tag">${esc(b.category)}</span>
+          ${b.category !== b.kind ? `<span class="tag">${esc(b.category)}</span>` : ""}
           <span class="faint mono">${esc(b.modelRef)}</span>
         </div>
         <h2>${esc(b.title)}</h2>
@@ -407,7 +412,7 @@ code, .mono { font-family: var(--mono); font-size: 12px; }
         <h3>Checkpoints</h3>
         ${checkpoints.length ? `<ol class="timeline">${checkpoints.map((c) => `
           <li class="${c.id === thread.headCheckpointId ? "head" : ""}">
-            <span class="label">${esc(c.label || c.id)}${c.id === thread.headCheckpointId ? ` <span class="faint">· head</span>` : ""}</span>
+            <span class="label">${esc(label(c))}${c.id === thread.headCheckpointId ? ` <span class="faint">· head</span>` : ""}</span>
             <span class="meta mono">${esc(c.id)}</span>
             <span class="meta">${ago(c.createdAt)}${c.summary ? ` · ${esc(c.summary)}` : ""}</span>
           </li>`).join("")}</ol>` : `<div class="empty">No checkpoints on this branch yet.</div>`}
