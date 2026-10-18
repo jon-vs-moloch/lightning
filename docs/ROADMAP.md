@@ -1,5 +1,7 @@
 # Lightning Roadmap
 
+Status as of October 2026: Phases 0 and 1 are done. Phase 2 is partly done: the `llama.cpp` adapter and managed `llama-server` lifecycle work, but every branch operation is emulated at the message level (no native KV-cache checkpoints yet). Phases 3 onward have not started.
+
 ## Phase 0: Scaffold
 
 Goal:
@@ -28,7 +30,7 @@ Deliverables:
 ## Phase 2: First real backend
 
 Goal:
-- run Lightning locally on Jon's Mac
+- run Lightning locally on a laptop
 
 Preferred first backends:
 1. `llama.cpp` for GGUF
@@ -65,6 +67,20 @@ Deliverables:
   - subconscious trace
 - Candle UI becomes a client/operator surface for Lightning
 
+## Phase 5: Hosted backend
+
+Goal:
+- add the serious server backend
+
+Preferred target:
+- `vLLM`
+
+Deliverables:
+- vLLM adapter
+- better checkpoint/cache economics
+- wider concurrency
+- real branch scheduling under load
+
 ## Phase 6: Consumer local runtime
 
 Goal:
@@ -80,20 +96,6 @@ Possible deliverables:
 
 Principle:
 - users should not need to understand inference internals in order to benefit from a better runtime
-
-## Phase 5: Hosted backend
-
-Goal:
-- add the serious server backend
-
-Preferred target:
-- `vLLM`
-
-Deliverables:
-- vLLM adapter
-- better checkpoint/cache economics
-- wider concurrency
-- real branch scheduling under load
 
 ## Later Research Track
 

@@ -1,5 +1,7 @@
 # Handoff
 
+> Historical note, written when the repository was scaffolded (2026-04-08). Since then the in-memory runtime, fake adapter, thermal planner, `llama.cpp` adapter, managed `llama-server` lifecycle and HTTP API have landed; see the [README](../README.md) and [ROADMAP](ROADMAP.md) for current status.
+
 This repository was scaffolded as the sister project to Candle.
 
 The intent is:

@@ -1,6 +1,6 @@
 # Backends
 
-Lightning backends should implement the adapter contract in [src/core/adapter.ts](/Users/jon/Projects/lightning/src/core/adapter.ts).
+Lightning backends should implement the adapter contract in [src/core/adapter.ts](../core/adapter.ts).
 
 Planned early backends:
 - `llama.cpp`
