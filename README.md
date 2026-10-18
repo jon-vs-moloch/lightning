@@ -54,6 +54,7 @@ A small, typed, tested TypeScript scaffold (about 3k lines, no runtime dependenc
   - an OpenAI-compatible `POST /v1/chat/completions`. Pass a `thread_id` and Lightning dedupes the prefix it already has, then appends only the new suffix;
   - `GET /v1/branches` and a branch inspector page at `/`.
   - POST bodies must be `content-type: application/json` and at most 1 MiB (otherwise `415` or `413`). A frozen branch is read-only: turns, pins and checkpoint responses on it get `409` until it is thawed.
+  - The server only answers requests whose `Host` header names it: `localhost`, `127.0.0.1` or `[::1]` with the port it listens on, plus any configured host. Everything else gets `403`. This blocks DNS-rebinding pages from reaching the API through the browser. `HOST` set to a specific address is allowed automatically; if you bind a wildcard address (`HOST=0.0.0.0`) or sit behind a proxy, list the names clients use in `LIGHTNING_ALLOWED_HOSTS` (comma-separated hostnames, matched with any port). Bad request bodies get `400`, and an unknown checkpoint gets `404`.
 
 What is honest to say about it today: checkpoints are in memory, and every adapter, `llama.cpp` included, emulates them at the message level. Native KV-cache checkpoints, persistence and successor compaction are the next phases. Streaming is not implemented.
 
@@ -113,7 +114,7 @@ With a local GGUF model and `llama-server` (from [llama.cpp](https://github.com/
 LIGHTNING_MODEL=/path/to/model.gguf npm run serve
 ```
 
-Lightning starts `llama-server` on `127.0.0.1:8080`, waits for it to become healthy, and serves its own API and the inspector on `http://127.0.0.1:8787`. To attach to a `llama.cpp` server you already run, set `LLAMA_CPP_BASE_URL=http://127.0.0.1:8080` instead. Other settings: `LLAMA_CPP_BINARY`, `LLAMA_CPP_HOST`, `LLAMA_CPP_PORT`, `LLAMA_CPP_ARGS`, `LLAMA_CPP_MANAGED=0|1`, `HOST`, `PORT`.
+Lightning starts `llama-server` on `127.0.0.1:8080`, waits for it to become healthy, and serves its own API and the inspector on `http://127.0.0.1:8787`. To attach to a `llama.cpp` server you already run, set `LLAMA_CPP_BASE_URL=http://127.0.0.1:8080` instead. Other settings: `LLAMA_CPP_BINARY`, `LLAMA_CPP_HOST`, `LLAMA_CPP_PORT`, `LLAMA_CPP_ARGS`, `LLAMA_CPP_MANAGED=0|1`, `HOST`, `PORT`, `LIGHTNING_ALLOWED_HOSTS`.
 
 ```bash
 curl -s http://127.0.0.1:8787/v1/threads/demo/messages \

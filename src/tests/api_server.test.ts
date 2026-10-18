@@ -1,17 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { request as httpRequest } from "node:http";
 
 import { createLightningApiServer } from "../api/server.js";
 import { FakeAdapter, LightningRuntime } from "../index.js";
 
-async function startTestServer() {
+async function startTestServer(serverOptions: { allowedHosts?: string[] } = {}) {
   const runtime = new LightningRuntime();
   runtime.registerAdapter(new FakeAdapter());
 
   const server = createLightningApiServer({
     runtime,
     defaultBackend: "fake",
-    defaultModelRef: "fake-echo-v1"
+    defaultModelRef: "fake-echo-v1",
+    ...serverOptions
   });
 
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -23,11 +25,48 @@ async function startTestServer() {
   return {
     runtime,
     baseUrl: `http://127.0.0.1:${address.port}`,
+    port: address.port,
     close: async () =>
       new Promise<void>((resolve, reject) =>
         server.close((error) => (error ? reject(error) : resolve()))
       )
   };
+}
+
+/** Send a raw HTTP request (fetch cannot set Host or force chunked encoding). */
+function rawRequest(input: {
+  port: number;
+  method: string;
+  path: string;
+  headers: Record<string, string>;
+  chunks?: Buffer[];
+}): Promise<{ status: number; body: string }> {
+  return new Promise((resolve, reject) => {
+    const req = httpRequest({
+      host: "127.0.0.1",
+      port: input.port,
+      method: input.method,
+      path: input.path,
+      headers: input.headers
+    });
+
+    req.on("error", reject);
+    req.on("response", (res) => {
+      const chunks: Buffer[] = [];
+      res.on("data", (chunk: Buffer) => chunks.push(chunk));
+      res.on("end", () => {
+        resolve({
+          status: res.statusCode ?? 0,
+          body: Buffer.concat(chunks).toString("utf8")
+        });
+      });
+    });
+
+    for (const chunk of input.chunks ?? []) {
+      req.write(chunk);
+    }
+    req.end();
+  });
 }
 
 test("thread endpoint persists a conversation and appends the assistant reply", async () => {
@@ -506,5 +545,252 @@ test("POST bodies must be JSON and at most 1 MiB", async () => {
     assert.equal(charsetResponse.status, 200);
   } finally {
     await harness.close();
+  }
+});
+
+test("checkpoint responses cannot move a frozen thread's head (N-01)", async () => {
+  const harness = await startTestServer();
+
+  try {
+    const openResponse = await fetch(`${harness.baseUrl}/v1/threads/open-demo/messages`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        message: {
+          content: "Open"
+        }
+      })
+    });
+    const openPayload = (await openResponse.json()) as { headCheckpointId?: string };
+    assert.equal(openResponse.status, 200);
+    const openCheckpoint = openPayload.headCheckpointId;
+    assert.ok(openCheckpoint);
+
+    const frozenResponse = await fetch(`${harness.baseUrl}/v1/threads/frozen-head/messages`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        message: {
+          content: "Frozen"
+        }
+      })
+    });
+    assert.equal(frozenResponse.status, 200);
+    const frozenHead = harness.runtime.getThreadHead("frozen-head");
+
+    await harness.runtime.freezeBranch("frozen-head");
+
+    const sneakResponse = await fetch(
+      `${harness.baseUrl}/v1/checkpoints/${openCheckpoint}/respond`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          thread_id: "frozen-head",
+          message: {
+            content: "Sneak"
+          }
+        })
+      }
+    );
+    const sneakPayload = (await sneakResponse.json()) as { error?: string };
+    assert.equal(sneakResponse.status, 409);
+    assert.match(sneakPayload.error ?? "", /frozen/);
+
+    assert.equal(harness.runtime.getThreadHead("frozen-head"), frozenHead);
+    assert.equal(harness.runtime.getMessages("open-demo").length, 2);
+
+    const badThreadResponse = await fetch(
+      `${harness.baseUrl}/v1/checkpoints/${openCheckpoint}/respond`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          thread_id: 42,
+          message: {
+            content: "Sneak"
+          }
+        })
+      }
+    );
+    await badThreadResponse.json();
+    assert.equal(badThreadResponse.status, 400);
+  } finally {
+    await harness.close();
+  }
+});
+
+test("a streamed oversize body without content-length gets 413 (N-02)", async () => {
+  const harness = await startTestServer();
+
+  try {
+    const chunks = Array.from({ length: 32 }, () => Buffer.alloc(64 * 1024, "x"));
+    const bigResponse = await rawRequest({
+      port: harness.port,
+      method: "POST",
+      path: "/v1/threads/stream-big/messages",
+      headers: { "content-type": "application/json" },
+      chunks
+    });
+
+    assert.equal(bigResponse.status, 413);
+    assert.match((JSON.parse(bigResponse.body) as { error?: string }).error ?? "", /larger than/);
+    assert.throws(() => harness.runtime.getBranch("stream-big"));
+
+    const smallResponse = await rawRequest({
+      port: harness.port,
+      method: "POST",
+      path: "/v1/threads/stream-small/messages",
+      headers: { "content-type": "application/json" },
+      chunks: [Buffer.from(JSON.stringify({ message: { content: "small stream" } }))]
+    });
+
+    assert.equal(smallResponse.status, 200);
+  } finally {
+    await harness.close();
+  }
+});
+
+test("turn routes answer 400 for a missing message and 404 for an unknown checkpoint", async () => {
+  const harness = await startTestServer();
+
+  try {
+    const noMessageResponse = await fetch(`${harness.baseUrl}/v1/threads/no-message/messages`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{}"
+    });
+    await noMessageResponse.json();
+    assert.equal(noMessageResponse.status, 400);
+    assert.throws(() => harness.runtime.getBranch("no-message"));
+
+    const noContentResponse = await fetch(`${harness.baseUrl}/v1/threads/no-content/messages`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        message: {
+          role: "user"
+        }
+      })
+    });
+    await noContentResponse.json();
+    assert.equal(noContentResponse.status, 400);
+
+    const nullBodyResponse = await fetch(`${harness.baseUrl}/v1/threads/null-body/messages`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "null"
+    });
+    await nullBodyResponse.json();
+    assert.equal(nullBodyResponse.status, 400);
+
+    const createResponse = await fetch(`${harness.baseUrl}/v1/threads/has-ckpt/messages`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        message: {
+          content: "hi"
+        }
+      })
+    });
+    const created = (await createResponse.json()) as { headCheckpointId?: string };
+    assert.ok(created.headCheckpointId);
+
+    const emptyRespondResponse = await fetch(
+      `${harness.baseUrl}/v1/checkpoints/${created.headCheckpointId}/respond`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "{}"
+      }
+    );
+    await emptyRespondResponse.json();
+    assert.equal(emptyRespondResponse.status, 400);
+
+    const unknownRespondResponse = await fetch(
+      `${harness.baseUrl}/v1/checkpoints/ckpt-does-not-exist/respond`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          message: {
+            content: "x"
+          }
+        })
+      }
+    );
+    const unknownRespondPayload = (await unknownRespondResponse.json()) as { error?: string };
+    assert.equal(unknownRespondResponse.status, 404);
+    assert.match(unknownRespondPayload.error ?? "", /Unknown checkpoint/);
+
+    const unknownInspectResponse = await fetch(
+      `${harness.baseUrl}/v1/checkpoints/ckpt-does-not-exist`
+    );
+    await unknownInspectResponse.json();
+    assert.equal(unknownInspectResponse.status, 404);
+  } finally {
+    await harness.close();
+  }
+});
+
+test("only loopback and configured Host headers are answered (DNS-rebinding defence)", async () => {
+  const harness = await startTestServer();
+
+  try {
+    const hostCases: Array<[string, number]> = [
+      [`localhost:${harness.port}`, 200],
+      [`127.0.0.1:${harness.port}`, 200],
+      [`[::1]:${harness.port}`, 200],
+      [`LOCALHOST:${harness.port}`, 200],
+      [`evil.example:${harness.port}`, 403],
+      ["evil.example", 403],
+      [`localhost:${harness.port + 1}`, 403],
+      ["localhost", 403],
+      [`127.0.0.1.evil.example:${harness.port}`, 403]
+    ];
+
+    for (const [host, expectedStatus] of hostCases) {
+      const response = await rawRequest({
+        port: harness.port,
+        method: "GET",
+        path: "/v1/branches",
+        headers: { host }
+      });
+      assert.equal(response.status, expectedStatus, `host ${host} must answer ${expectedStatus}`);
+    }
+
+    const rebindResponse = await rawRequest({
+      port: harness.port,
+      method: "POST",
+      path: "/v1/threads/rebind/messages",
+      headers: { host: `attacker.example:${harness.port}`, "content-type": "application/json" },
+      chunks: [Buffer.from(JSON.stringify({ message: { content: "x" } }))]
+    });
+    assert.equal(rebindResponse.status, 403);
+    assert.throws(() => harness.runtime.getBranch("rebind"));
+  } finally {
+    await harness.close();
+  }
+
+  const configured = await startTestServer({ allowedHosts: ["Lightning.Test"] });
+
+  try {
+    const configuredCases: Array<[string, number]> = [
+      [`lightning.test:${configured.port}`, 200],
+      ["lightning.test", 200],
+      [`other.test:${configured.port}`, 403]
+    ];
+
+    for (const [host, expectedStatus] of configuredCases) {
+      const response = await rawRequest({
+        port: configured.port,
+        method: "GET",
+        path: "/v1/branches",
+        headers: { host }
+      });
+      assert.equal(response.status, expectedStatus, `host ${host} must answer ${expectedStatus}`);
+    }
+  } finally {
+    await configured.close();
   }
 });

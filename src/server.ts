@@ -6,6 +6,14 @@ import { LightningRuntime } from "./core/runtime.js";
 async function main(): Promise<void> {
   const port = Number(process.env.PORT ?? 8787);
   const host = process.env.HOST ?? "127.0.0.1";
+  // The Host check is a DNS-rebinding defence; binding a wildcard address needs LIGHTNING_ALLOWED_HOSTS for the names clients will use.
+  const allowedHosts = (process.env.LIGHTNING_ALLOWED_HOSTS ?? "")
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  if (host && !["0.0.0.0", "::", "[::]"].includes(host)) {
+    allowedHosts.push(host.includes(":") && !host.startsWith("[") ? `[${host}]` : host);
+  }
   const externalBaseUrl = process.env.LLAMA_CPP_BASE_URL;
   const modelRef = process.env.LIGHTNING_MODEL ?? "local-model";
   const managedHost = process.env.LLAMA_CPP_HOST ?? "127.0.0.1";
@@ -49,7 +57,8 @@ async function main(): Promise<void> {
   const server = createLightningApiServer({
     runtime,
     defaultBackend: "llama.cpp",
-    defaultModelRef: modelRef
+    defaultModelRef: modelRef,
+    allowedHosts
   });
 
   const shutdown = async () => {

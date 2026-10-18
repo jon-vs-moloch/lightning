@@ -3,12 +3,19 @@ import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 import type { AppendMessageInput, LightningRuntime } from "../core/runtime.js";
-import type { BranchRecord, GenerateResult, MessageRecord } from "../core/types.js";
+import type { BranchCheckpoint, BranchRecord, GenerateResult, MessageRecord } from "../core/types.js";
 
 export interface LightningApiServerOptions {
   runtime: LightningRuntime;
   defaultBackend: string;
   defaultModelRef: string;
+
+  /**
+   * Extra Host-header names the server answers to, besides localhost, 127.0.0.1 and [::1].
+   * Each entry is a hostname (case-insensitive, IPv6 in brackets) and matches with any port or none,
+   * for example a LAN name or a reverse proxy's public name. Every other Host is refused with 403.
+   */
+  allowedHosts?: string[];
 }
 
 interface ThreadMessageRequest {
@@ -84,9 +91,73 @@ class HttpError extends Error {
   }
 }
 
+/** Loopback names always accepted in the Host header, but only with the port the request arrived on. */
+const LOOPBACK_HOSTNAMES = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+/** Split a Host header into a lower-cased hostname (IPv6 keeps its brackets) and an optional port string. Returns undefined when it cannot be parsed. */
+function parseHostHeader(value: string): { hostname: string; port?: string } | undefined {
+  const trimmed = value.trim().toLowerCase();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  if (trimmed.startsWith("[")) {
+    const closing = trimmed.indexOf("]");
+    if (closing === -1) {
+      return undefined;
+    }
+    const hostname = trimmed.slice(0, closing + 1);
+    const rest = trimmed.slice(closing + 1);
+    if (rest !== "" && !/^:\d+$/.test(rest)) {
+      return undefined;
+    }
+    return { hostname, port: rest === "" ? undefined : rest.slice(1) };
+  }
+
+  const firstColon = trimmed.indexOf(":");
+  if (firstColon === -1) {
+    return { hostname: trimmed };
+  }
+  if (trimmed.indexOf(":", firstColon + 1) !== -1) {
+    return undefined;
+  }
+  const hostname = trimmed.slice(0, firstColon);
+  const port = trimmed.slice(firstColon + 1);
+  if (!hostname || !/^\d+$/.test(port)) {
+    return undefined;
+  }
+  return { hostname, port };
+}
+
+/** DNS-rebinding defence: the Host header must name this server. */
+function isAllowedHost(req: IncomingMessage, options: LightningApiServerOptions): boolean {
+  const header = req.headers.host;
+  if (typeof header !== "string" || header === "") {
+    return false;
+  }
+  const parsed = parseHostHeader(header);
+  if (!parsed) {
+    return false;
+  }
+
+  if (LOOPBACK_HOSTNAMES.has(parsed.hostname)) {
+    const effectivePort = parsed.port ?? "80";
+    return effectivePort === String(req.socket.localPort);
+  }
+
+  const allowed = options.allowedHosts ?? [];
+  return allowed.some((entry) => entry.trim().toLowerCase() === parsed.hostname);
+}
+
 export function createLightningApiServer(options: LightningApiServerOptions) {
   const server = createServer(async (req, res) => {
     try {
+      if (!isAllowedHost(req, options)) {
+        throw new HttpError(
+          403,
+          "Host header not allowed. Lightning only answers to localhost, 127.0.0.1, [::1] and configured allowed hosts."
+        );
+      }
       await routeRequest(req, res, options);
     } catch (error) {
       writeJson(res, error instanceof HttpError ? error.statusCode : 500, {
@@ -186,14 +257,15 @@ async function handleThreadMessage(
   body: ThreadMessageRequest,
   options: LightningApiServerOptions
 ) {
+  const message = requireMessage(body);
   assertBranchWritable(threadId, options);
   await ensureBranch(threadId, body.branch, options);
 
   await options.runtime.appendMessages(threadId, [
     {
-      role: body.message.role ?? "user",
-      content: body.message.content,
-      metadata: body.message.metadata
+      role: message.role ?? "user",
+      content: message.content,
+      metadata: message.metadata
     }
   ]);
 
@@ -294,13 +366,20 @@ async function handleCheckpointRespond(
   body: CheckpointRespondRequest,
   options: LightningApiServerOptions
 ) {
-  assertBranchWritable(options.runtime.getCheckpoint(checkpointId).branchId, options);
+  const message = requireMessage(body);
+  if (body.thread_id !== undefined && typeof body.thread_id !== "string") {
+    throw new HttpError(400, "thread_id must be a string.");
+  }
+  assertBranchWritable(requireCheckpoint(checkpointId, options).branchId, options);
+  if (body.thread_id) {
+    assertBranchWritable(body.thread_id, options);
+  }
   const result = await options.runtime.respondFromCheckpoint(
     checkpointId,
     {
-      role: body.message.role ?? "user",
-      content: body.message.content,
-      metadata: body.message.metadata
+      role: message.role ?? "user",
+      content: message.content,
+      metadata: message.metadata
     },
     body.generation,
     {
@@ -370,6 +449,7 @@ async function handleThreadInspect(threadId: string, options: LightningApiServer
 }
 
 async function handleCheckpointInspect(checkpointId: string, options: LightningApiServerOptions) {
+  requireCheckpoint(checkpointId, options);
   const snapshot = options.runtime.inspectCheckpoint(checkpointId);
   const threadHead = options.runtime
     .listThreadHeads()
@@ -438,6 +518,45 @@ async function handleThreadPin(
     stats: await options.runtime.branchStats(threadId),
     recentMessages: options.runtime.getMessages(threadId).slice(-20)
   };
+}
+
+/** Turn routes need `message.content` as a string; anything else is a client error, not a crash. */
+function requireMessage(body: unknown): {
+  role?: MessageRecord["role"];
+  content: string;
+  metadata?: Record<string, unknown>;
+} {
+  if (typeof body !== "object" || body === null) {
+    throw new HttpError(400, "Request body needs a message object with a string content field.");
+  }
+
+  const record = body as Record<string, unknown>;
+  if (typeof record.message !== "object" || record.message === null) {
+    throw new HttpError(400, "Request body needs a message object with a string content field.");
+  }
+
+  const message = record.message as Record<string, unknown>;
+  if (typeof message.content !== "string") {
+    throw new HttpError(400, "Request body needs a message object with a string content field.");
+  }
+
+  return message as {
+    role?: MessageRecord["role"];
+    content: string;
+    metadata?: Record<string, unknown>;
+  };
+}
+
+/** Look up a checkpoint, answering 404 for an unknown id instead of a 500. */
+function requireCheckpoint(
+  checkpointId: string,
+  options: LightningApiServerOptions
+): BranchCheckpoint {
+  try {
+    return options.runtime.getCheckpoint(checkpointId);
+  } catch {
+    throw new HttpError(404, `Unknown checkpoint: ${checkpointId}`);
+  }
 }
 
 /** Frozen branches are read-only: refuse any request that would add a turn to, rewind or replace one. Unknown ids pass (the route creates the branch). */
