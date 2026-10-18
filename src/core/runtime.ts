@@ -2,6 +2,7 @@ import type { LightningAdapter } from "./adapter.js";
 import { planThermalTransitions } from "./scheduler.js";
 import { InMemoryBranchStore } from "./store.js";
 import type {
+  AdapterCapabilities,
   BranchCheckpoint,
   BranchRecord,
   BranchStats,
@@ -52,6 +53,15 @@ export class LightningRuntime {
 
   listAdapters(): string[] {
     return [...this.adapters.keys()];
+  }
+
+  /** Adapter ids, labels and their native/emulated/unsupported capability report. */
+  describeAdapters(): Array<{ id: string; label: string; capabilities: AdapterCapabilities }> {
+    return [...this.adapters.values()].map((adapter) => ({
+      id: adapter.id,
+      label: adapter.label,
+      capabilities: adapter.capabilities()
+    }));
   }
 
   listBranches(): BranchRecord[] {

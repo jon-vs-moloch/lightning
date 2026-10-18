@@ -287,3 +287,47 @@ test("thread pinning imports transcript state and sets a new head checkpoint", a
     await harness.close();
   }
 });
+
+test("branch list reports branches, message counts, thread heads and adapter capabilities", async () => {
+  const harness = await startTestServer();
+
+  try {
+    await fetch(`${harness.baseUrl}/v1/threads/listed/messages`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: { content: "List me" } })
+    });
+
+    const response = await fetch(`${harness.baseUrl}/v1/branches`);
+    const payload = (await response.json()) as {
+      defaultBackend?: string;
+      adapters?: Array<{ id: string; capabilities: Record<string, string> }>;
+      branches?: Array<{ id: string; messageCount: number; headCheckpointId?: string }>;
+    };
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.defaultBackend, "fake");
+    assert.equal(payload.adapters?.[0]?.id, "fake");
+    assert.equal(payload.adapters?.[0]?.capabilities.prefixReuse, "unsupported");
+    const listed = payload.branches?.find((branch) => branch.id === "listed");
+    assert.equal(listed?.messageCount, 2);
+    assert.equal(listed?.headCheckpointId, harness.runtime.getThreadHead("listed"));
+  } finally {
+    await harness.close();
+  }
+});
+
+test("root serves the inspector page", async () => {
+  const harness = await startTestServer();
+
+  try {
+    const response = await fetch(`${harness.baseUrl}/`);
+    const body = await response.text();
+
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("content-type") ?? "", /text\/html/);
+    assert.match(body, /<title>Lightning<\/title>/);
+  } finally {
+    await harness.close();
+  }
+});

@@ -1,5 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 
 import type { AppendMessageInput, LightningRuntime } from "../core/runtime.js";
 import type { BranchRecord, GenerateResult, MessageRecord } from "../core/types.js";
@@ -91,6 +92,23 @@ async function routeRequest(
 ): Promise<void> {
   const method = req.method ?? "GET";
   const url = new URL(req.url ?? "/", "http://127.0.0.1");
+
+  if (method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) {
+    const page = loadInspectorPage();
+    if (!page) {
+      writeJson(res, 404, { error: "Inspector page not found (expected public/index.html)." });
+      return;
+    }
+    res.statusCode = 200;
+    res.setHeader("content-type", "text/html; charset=utf-8");
+    res.end(page);
+    return;
+  }
+
+  if (method === "GET" && url.pathname === "/v1/branches") {
+    writeJson(res, 200, handleBranchList(options));
+    return;
+  }
 
   if (method === "GET" && url.pathname === "/healthz") {
     writeJson(res, 200, {
@@ -289,6 +307,35 @@ async function handleCheckpointRespond(
     stats,
     branch: result.branch
   };
+}
+
+/** Read-only snapshot of the whole branch set, used by the inspector page. */
+function handleBranchList(options: LightningApiServerOptions) {
+  const threadHeads = options.runtime.listThreadHeads();
+  return {
+    defaultBackend: options.defaultBackend,
+    adapters: options.runtime.describeAdapters(),
+    branches: options.runtime.listBranches().map((branch) => ({
+      ...branch,
+      messageCount: options.runtime.getMessages(branch.id).length,
+      headCheckpointId: threadHeads.find((entry) => entry.threadId === branch.id)?.checkpointId
+    })),
+    threadHeads
+  };
+}
+
+let inspectorPage: string | null | undefined;
+
+/** The inspector is one static file at <package root>/public/index.html. */
+function loadInspectorPage(): string | null {
+  if (inspectorPage === undefined) {
+    try {
+      inspectorPage = readFileSync(new URL("../../public/index.html", import.meta.url), "utf8");
+    } catch {
+      inspectorPage = null;
+    }
+  }
+  return inspectorPage;
 }
 
 async function handleThreadInspect(threadId: string, options: LightningApiServerOptions) {
