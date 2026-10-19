@@ -1,0 +1,11 @@
+# KV fingerprint invalidation check (operator script, not part of the eval), Cedar 2026-10-19
+# llama-server b11719 + Qwen2.5-0.5B Q8_0 started with --parallel 4 -c 32768 (8,192 per slot), one turn saved,
+# then the server was restarted with -c 16384 (4,096 per slot) and Lightning called checkKvFingerprint().
+# Model directory redacted to the file name.
+2026-10-19T00:12:22.256Z probe {"mode":"native","reason":"llama-server slot save/restore active: 4 slots (b11719-5aeac37a3)","slots":4,"buildInfo":"b11719-5aeac37a3"}
+2026-10-19T00:12:23.931Z gen1 kv {"mode":"native","slot":0,"tier":"cold","residentHit":false,"savedTo":"lightning-2580967-f8fa4f49-fp-1.bin","timings":{"cache_n":0,"prompt_n":36,"prompt_ms":421.24,"prompt_per_token_ms":11.70111111111111,"prompt_per_second":85.46196942360649,"predicted_n":8,"predicted_ms":1237.455,"predicted_per_token_ms":176.7792857142857,"predicted_per_second":5.656771357342288}} files 1
+2026-10-19T00:12:23.931Z fingerprint before {"buildInfo":"b11719-5aeac37a3","modelPath":"qwen2.5-0.5b-instruct-q8_0.gguf","modelFtype":"Q8_0","nCtxPerSlot":8192} 6782ed2aa08a7622
+2026-10-19T00:12:30.009Z check {"changed":true,"fingerprintId":"81c9a847c09a4bea"} lastInvalidation {"at":"2026-10-19T00:12:30.009Z","from":"6782ed2aa08a7622","to":"81c9a847c09a4bea","filesDropped":1} files ledger 0 on disk 0
+2026-10-19T00:12:31.589Z gen2 kv {"mode":"native","slot":1,"tier":"cold","residentHit":false,"savedTo":"lightning-2580967-f8fa4f49-fp-2.bin","timings":{"cache_n":0,"prompt_n":36,"prompt_ms":378.376,"prompt_per_token_ms":10.510444444444444,"prompt_per_second":95.14345518743262,"predicted_n":8,"predicted_ms":1186.685,"predicted_per_token_ms":169.52642857142857,"predicted_per_second":5.898785271575861}}
+2026-10-19T00:12:31.590Z close {"filesDeleted":1,"bytesDeleted":529712} on disk 0
+2026-10-19T00:12:31.595Z server stopped

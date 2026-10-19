@@ -22,11 +22,20 @@ Native mode: `probeKvSupport()` checks `GET /props` for `total_slots` and tries 
 
 In native mode, each generation:
 
-1. restores the branch's last saved KV file into an idle slot;
+1. takes an idle slot, preferring one that still holds the branch's KV (hot: no restore); otherwise restores the branch's last saved KV file (warm), or erases the slot when the branch has no file (cold);
 2. sends the full transcript, so correctness never depends on the file — `llama-server` only reuses the common token prefix;
 3. saves the slot to a new file afterwards.
 
-Mapping to the branch model: forks inherit the parent's KV file, checkpoints record it, and restore puts the recorded file back. `--slot-save-path` on `llama-server` decides where the files land; they are named per generation and nothing deletes them yet.
+Mapping to the branch model: forks inherit the parent's KV file, checkpoints record it, and restore puts the recorded file back. `--slot-save-path` on `llama-server` decides where the files land. Files are named `lightning-<pid>-<random>-<branch>-<n>.bin`, so two Lightning processes sharing one server never collide.
+
+Slot files are a derived cache and are managed (see [`docs/MANAGED_TREE.md`](../../docs/MANAGED_TREE.md)). With `slotSaveDir` set to the same directory on the local host:
+
+- a superseded file is deleted as soon as no branch head, fork or checkpoint holds it;
+- after each save, files are evicted coldest-first when Lightning's files exceed the disk limit: the filesystem's free space minus a reserve big enough for every slot to save a full context (measured bytes per token × per-slot context), or a tighter operator `kvDiskBudgetBytes`;
+- `applyTemperature(branch, "cold")` drops a branch's files; `close()` deletes everything the adapter owns; `sweepOrphanSlotFiles()` removes files of exited Lightning processes on this host;
+- a change of llama.cpp build, model path, quantization or per-slot context (from `GET /props`) invalidates every file; a failed restore drops the file and answers from the transcript.
+
+`kvCacheReport()` (also under `cacheStats().kvCache`) shows files, bytes, bytes per token, the current limit and which bound applied, counters, the last eviction and invalidation, and which file each slot holds. llama-server has no delete action, so without `slotSaveDir` nothing can be deleted and the report says cleanup is disabled.
 
 `LightningRuntime.fanOutFromCheckpoints()` runs one request against several checkpoints on distinct branches in parallel, one slot each. Fan-out width is capped by the slot count; extra requests wait for a free slot.
 

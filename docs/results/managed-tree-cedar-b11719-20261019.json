@@ -1,0 +1,2987 @@
+{
+  "conditions": {
+    "label": "cedar-b11719-qwen0.5b-run3",
+    "baseUrl": "http://127.0.0.1:18911",
+    "nodeVersion": "v22.23.2",
+    "hostname": "redacted",
+    "cpu": "Neoverse-N1",
+    "cpus": 4,
+    "totalMemGiB": 23.4,
+    "loadavgStart": [
+      7.88,
+      7.55,
+      6.71
+    ],
+    "startedAt": "2026-10-19T00:13:33.388Z",
+    "k": 3,
+    "maxTokens": 48,
+    "compactRatios": [
+      0.25,
+      0.5,
+      0.75
+    ],
+    "budgetFiles": 3,
+    "vane": "installed",
+    "fingerprintId": "6782ed2aa08a7622",
+    "fingerprint": {
+      "buildInfo": "b11719-5aeac37a3",
+      "modelPath": "qwen2.5-0.5b-instruct-q8_0.gguf",
+      "modelFtype": "Q8_0",
+      "nCtxPerSlot": 8192
+    },
+    "totalSlots": 4,
+    "loadavgEnd": [
+      8.81,
+      9.88,
+      8.53
+    ],
+    "finishedAt": "2026-10-19T00:26:37.911Z"
+  },
+  "router": [
+    {
+      "config": "summary+vane",
+      "k": 1,
+      "summaryMethod": "vane",
+      "meanSummaryChars": 433,
+      "all": {
+        "hits": 19,
+        "total": 24,
+        "rate": 0.7916666666666666
+      },
+      "close": {
+        "hits": 10,
+        "total": 12,
+        "rate": 0.8333333333333334
+      },
+      "far": {
+        "hits": 9,
+        "total": 12,
+        "rate": 0.75
+      }
+    },
+    {
+      "config": "summary+vane",
+      "k": 3,
+      "summaryMethod": "vane",
+      "meanSummaryChars": 433,
+      "all": {
+        "hits": 22,
+        "total": 24,
+        "rate": 0.9166666666666666
+      },
+      "close": {
+        "hits": 11,
+        "total": 12,
+        "rate": 0.9166666666666666
+      },
+      "far": {
+        "hits": 11,
+        "total": 12,
+        "rate": 0.9166666666666666
+      }
+    },
+    {
+      "config": "summary+extractive",
+      "k": 1,
+      "summaryMethod": "extractive",
+      "meanSummaryChars": 573,
+      "all": {
+        "hits": 21,
+        "total": 24,
+        "rate": 0.875
+      },
+      "close": {
+        "hits": 11,
+        "total": 12,
+        "rate": 0.9166666666666666
+      },
+      "far": {
+        "hits": 10,
+        "total": 12,
+        "rate": 0.8333333333333334
+      }
+    },
+    {
+      "config": "summary+extractive",
+      "k": 3,
+      "summaryMethod": "extractive",
+      "meanSummaryChars": 573,
+      "all": {
+        "hits": 23,
+        "total": 24,
+        "rate": 0.9583333333333334
+      },
+      "close": {
+        "hits": 12,
+        "total": 12,
+        "rate": 1
+      },
+      "far": {
+        "hits": 11,
+        "total": 12,
+        "rate": 0.9166666666666666
+      }
+    },
+    {
+      "config": "full-text",
+      "k": 1,
+      "summaryMethod": "extractive",
+      "meanSummaryChars": 573,
+      "all": {
+        "hits": 22,
+        "total": 24,
+        "rate": 0.9166666666666666
+      },
+      "close": {
+        "hits": 11,
+        "total": 12,
+        "rate": 0.9166666666666666
+      },
+      "far": {
+        "hits": 11,
+        "total": 12,
+        "rate": 0.9166666666666666
+      }
+    },
+    {
+      "config": "full-text",
+      "k": 3,
+      "summaryMethod": "extractive",
+      "meanSummaryChars": 573,
+      "all": {
+        "hits": 24,
+        "total": 24,
+        "rate": 1
+      },
+      "close": {
+        "hits": 12,
+        "total": 12,
+        "rate": 1
+      },
+      "far": {
+        "hits": 12,
+        "total": 12,
+        "rate": 1
+      }
+    }
+  ],
+  "build": {
+    "branches": [
+      {
+        "id": "garden",
+        "wallMs": 8227.4,
+        "prefill": {
+          "tier": "cold",
+          "prompt_n": 505,
+          "cache_n": 0,
+          "prompt_ms": 8164
+        }
+      },
+      {
+        "id": "taxes",
+        "wallMs": 6610.2,
+        "prefill": {
+          "tier": "cold",
+          "prompt_n": 523,
+          "cache_n": 0,
+          "prompt_ms": 6564.5
+        }
+      },
+      {
+        "id": "rustbug",
+        "wallMs": 7224.8,
+        "prefill": {
+          "tier": "cold",
+          "prompt_n": 539,
+          "cache_n": 0,
+          "prompt_ms": 7179
+        }
+      },
+      {
+        "id": "lisbon",
+        "wallMs": 5517.5,
+        "prefill": {
+          "tier": "cold",
+          "prompt_n": 526,
+          "cache_n": 0,
+          "prompt_ms": 5500.8
+        }
+      },
+      {
+        "id": "sourdough",
+        "wallMs": 2996.1,
+        "prefill": {
+          "tier": "cold",
+          "prompt_n": 531,
+          "cache_n": 0,
+          "prompt_ms": 2980.2
+        }
+      },
+      {
+        "id": "car",
+        "wallMs": 2985,
+        "prefill": {
+          "tier": "cold",
+          "prompt_n": 535,
+          "cache_n": 0,
+          "prompt_ms": 2968.8
+        }
+      },
+      {
+        "id": "pgmigration",
+        "wallMs": 3052.5,
+        "prefill": {
+          "tier": "cold",
+          "prompt_n": 536,
+          "cache_n": 0,
+          "prompt_ms": 3039.2
+        }
+      },
+      {
+        "id": "party",
+        "wallMs": 2814.2,
+        "prefill": {
+          "tier": "cold",
+          "prompt_n": 517,
+          "cache_n": 0,
+          "prompt_ms": 2799.1
+        }
+      },
+      {
+        "id": "network",
+        "wallMs": 2665.9,
+        "prefill": {
+          "tier": "cold",
+          "prompt_n": 504,
+          "cache_n": 0,
+          "prompt_ms": 2650.1
+        }
+      },
+      {
+        "id": "marathon",
+        "wallMs": 2863.7,
+        "prefill": {
+          "tier": "cold",
+          "prompt_n": 520,
+          "cache_n": 0,
+          "prompt_ms": 2847.9
+        }
+      },
+      {
+        "id": "bookclub",
+        "wallMs": 2872.7,
+        "prefill": {
+          "tier": "cold",
+          "prompt_n": 530,
+          "cache_n": 0,
+          "prompt_ms": 2855.7
+        }
+      },
+      {
+        "id": "kitchen",
+        "wallMs": 2682.8,
+        "prefill": {
+          "tier": "cold",
+          "prompt_n": 508,
+          "cache_n": 0,
+          "prompt_ms": 2668
+        }
+      },
+      {
+        "id": "lawn",
+        "wallMs": 2939.1,
+        "prefill": {
+          "tier": "cold",
+          "prompt_n": 528,
+          "cache_n": 0,
+          "prompt_ms": 2922.9
+        }
+      },
+      {
+        "id": "insurance",
+        "wallMs": 2908.7,
+        "prefill": {
+          "tier": "cold",
+          "prompt_n": 523,
+          "cache_n": 0,
+          "prompt_ms": 2893.7
+        }
+      },
+      {
+        "id": "officewifi",
+        "wallMs": 2953.4,
+        "prefill": {
+          "tier": "cold",
+          "prompt_n": 522,
+          "cache_n": 0,
+          "prompt_ms": 2938.6
+        }
+      },
+      {
+        "id": "cakeclass",
+        "wallMs": 2663.8,
+        "prefill": {
+          "tier": "cold",
+          "prompt_n": 512,
+          "cache_n": 0,
+          "prompt_ms": 2646.7
+        }
+      }
+    ],
+    "medianPrefillPromptN": 523,
+    "medianPrefillMs": 2930.75,
+    "ledger": {
+      "files": 16,
+      "bytes": 102859376,
+      "bytesPerToken": 12305.269841269841
+    },
+    "disk": {
+      "files": 16,
+      "bytes": 102859376
+    },
+    "limit": {
+      "limitBytes": 72406966245,
+      "boundBy": "filesystem",
+      "reserveBytes": 403219083,
+      "fsAvailableBytes": 72707325952,
+      "at": "2026-10-19T00:14:35.669Z"
+    }
+  },
+  "oracle": {
+    "answerRate": {
+      "hits": 18,
+      "total": 24,
+      "rate": 0.75
+    },
+    "tiers": {
+      "hot": 15,
+      "warm": 9
+    },
+    "medianPromptMs": 318.35,
+    "rows": [
+      {
+        "id": "garden-close",
+        "text": "The drip timer waters the tomato bed at 6:40 every morning.",
+        "correct": true,
+        "wallMs": 3016,
+        "tier": "hot",
+        "prompt_n": 20,
+        "cache_n": 505,
+        "prompt_ms": 253.8
+      },
+      {
+        "id": "garden-far",
+        "text": "The drip system on the timer waters the tomato bed at 6:40 every morning. Keep the mulch a few inches away from the stems so the plants do not rot at the base during wet weeks.",
+        "correct": true,
+        "wallMs": 7138.5,
+        "tier": "hot",
+        "prompt_n": 15,
+        "cache_n": 510,
+        "prompt_ms": 273.8
+      },
+      {
+        "id": "taxes-close",
+        "text": "Priya Raman set the quarterly estimated payment at $3,150.",
+        "correct": true,
+        "wallMs": 2964.9,
+        "tier": "hot",
+        "prompt_n": 25,
+        "cache_n": 523,
+        "prompt_ms": 201
+      },
+      {
+        "id": "taxes-far",
+        "text": "Our accountant Priya Raman set the quarterly estimated payment at $3,150.",
+        "correct": true,
+        "wallMs": 3639.9,
+        "tier": "hot",
+        "prompt_n": 21,
+        "cache_n": 528,
+        "prompt_ms": 319.5
+      },
+      {
+        "id": "rustbug-close",
+        "text": "The panic occurred in line 212 of ring_buffer.rs.",
+        "correct": true,
+        "wallMs": 2747,
+        "tier": "hot",
+        "prompt_n": 20,
+        "cache_n": 539,
+        "prompt_ms": 308.2
+      },
+      {
+        "id": "rustbug-far",
+        "text": "The crash was traced back to line 212 in the buffer file.",
+        "correct": true,
+        "wallMs": 3135.3,
+        "tier": "hot",
+        "prompt_n": 19,
+        "cache_n": 544,
+        "prompt_ms": 308
+      },
+      {
+        "id": "lisbon-close",
+        "text": "The guesthouse is in Alfama.",
+        "correct": true,
+        "wallMs": 1751.7,
+        "tier": "warm",
+        "prompt_n": 22,
+        "cache_n": 526,
+        "prompt_ms": 335.4
+      },
+      {
+        "id": "lisbon-far",
+        "text": "We booked the guesthouse in Alfama for four nights starting May 9. From there, the walk to the top viewpoints usually takes about twenty minutes uphill, depending on how often you stop for photos.",
+        "correct": true,
+        "wallMs": 7419.7,
+        "tier": "hot",
+        "prompt_n": 20,
+        "cache_n": 531,
+        "prompt_ms": 312.5
+      },
+      {
+        "id": "sourdough-close",
+        "text": "The starter's name is Clint and it is fed at a 1:5:5 ratio. We feed it once a day at room temperature.",
+        "correct": true,
+        "wallMs": 5927.1,
+        "tier": "warm",
+        "prompt_n": 25,
+        "cache_n": 531,
+        "prompt_ms": 489.6
+      },
+      {
+        "id": "sourdough-far",
+        "text": "We called it the starter.",
+        "correct": false,
+        "wallMs": 1611.2,
+        "tier": "hot",
+        "prompt_n": 19,
+        "cache_n": 537,
+        "prompt_ms": 334.2
+      },
+      {
+        "id": "car-close",
+        "text": "The next car service is scheduled for 92,000 miles.",
+        "correct": true,
+        "wallMs": 3811,
+        "tier": "warm",
+        "prompt_n": 20,
+        "cache_n": 535,
+        "prompt_ms": 458.2
+      },
+      {
+        "id": "car-far",
+        "text": "The odometer reading is due for its next maintenance visit when it reaches 100,000 miles.",
+        "correct": false,
+        "wallMs": 4876.1,
+        "tier": "hot",
+        "prompt_n": 18,
+        "cache_n": 542,
+        "prompt_ms": 384.2
+      },
+      {
+        "id": "pgmigration-close",
+        "text": "The Postgres 17 rollback is run by Marcus, who owns the rollback and the rollback steps are written down and tested so they can be carried out without guesswork if the night goes badly.",
+        "correct": true,
+        "wallMs": 8563.2,
+        "tier": "warm",
+        "prompt_n": 22,
+        "cache_n": 536,
+        "prompt_ms": 473.6
+      },
+      {
+        "id": "pgmigration-far",
+        "text": "The rollback owner is on the hook if the database upgrade has to be undone.",
+        "correct": false,
+        "wallMs": 3427.4,
+        "tier": "hot",
+        "prompt_n": 20,
+        "cache_n": 541,
+        "prompt_ms": 316.3
+      },
+      {
+        "id": "party-close",
+        "text": "The cake is lemon with raspberry filling from Ruth's bakery.",
+        "correct": true,
+        "wallMs": 2047.2,
+        "tier": "warm",
+        "prompt_n": 21,
+        "cache_n": 517,
+        "prompt_ms": 318.7
+      },
+      {
+        "id": "party-far",
+        "text": "The lemon flavor is perfect for the cake and the lemon filling.",
+        "correct": true,
+        "wallMs": 3036.1,
+        "tier": "hot",
+        "prompt_n": 16,
+        "cache_n": 523,
+        "prompt_ms": 362.5
+      },
+      {
+        "id": "network-close",
+        "text": "The new guest network is called OwlNest-Guest on channel 11.",
+        "correct": true,
+        "wallMs": 3591.2,
+        "tier": "warm",
+        "prompt_n": 24,
+        "cache_n": 504,
+        "prompt_ms": 349.3
+      },
+      {
+        "id": "network-far",
+        "text": "When visitors join your Wi-Fi, choose a unique SSID that is different from the one on your main network. This will prevent visitors from accidentally connecting to your main network and causing interf",
+        "correct": false,
+        "wallMs": 7798.4,
+        "tier": "hot",
+        "prompt_n": 19,
+        "cache_n": 510,
+        "prompt_ms": 303.8
+      },
+      {
+        "id": "marathon-close",
+        "text": "The longest run in the marathon training plan is 32 kilometers.",
+        "correct": false,
+        "wallMs": 3310.8,
+        "tier": "warm",
+        "prompt_n": 22,
+        "cache_n": 520,
+        "prompt_ms": 519
+      },
+      {
+        "id": "marathon-far",
+        "text": "The peak training run is usually 32 kilometers, but it can vary depending on your fitness level and the length of your previous runs.",
+        "correct": false,
+        "wallMs": 5697.5,
+        "tier": "hot",
+        "prompt_n": 15,
+        "cache_n": 526,
+        "prompt_ms": 380.7
+      },
+      {
+        "id": "bookclub-close",
+        "text": "The book club chose The Dispossessed by Ursula K. Le Guin.",
+        "correct": true,
+        "wallMs": 3888.1,
+        "tier": "warm",
+        "prompt_n": 20,
+        "cache_n": 530,
+        "prompt_ms": 318
+      },
+      {
+        "id": "bookclub-far",
+        "text": "The reading group settled on The Dispossessed by Ursula K. Le Guin for this month.",
+        "correct": true,
+        "wallMs": 4514.7,
+        "tier": "hot",
+        "prompt_n": 17,
+        "cache_n": 535,
+        "prompt_ms": 256.5
+      },
+      {
+        "id": "kitchen-close",
+        "text": "The contractor quoted $18,400 for the cabinets and quartz counters.",
+        "correct": true,
+        "wallMs": 3675.6,
+        "tier": "warm",
+        "prompt_n": 22,
+        "cache_n": 508,
+        "prompt_ms": 278.6
+      },
+      {
+        "id": "kitchen-far",
+        "text": "The builder quoted $18,400 for the cabinets and quartz counters.",
+        "correct": true,
+        "wallMs": 3498.5,
+        "tier": "hot",
+        "prompt_n": 19,
+        "cache_n": 513,
+        "prompt_ms": 313.9
+      }
+    ]
+  },
+  "routed": {
+    "routeHitRate": {
+      "hits": 22,
+      "total": 24,
+      "rate": 0.9166666666666666
+    },
+    "answeredByRelevantRate": {
+      "hits": 16,
+      "total": 24,
+      "rate": 0.6666666666666666
+    },
+    "anyMatchRate": {
+      "hits": 17,
+      "total": 24,
+      "rate": 0.7083333333333334
+    },
+    "meanWallMs": 8465.9,
+    "tiers": {
+      "hot": 32,
+      "warm": 40
+    },
+    "rows": [
+      {
+        "id": "garden-close",
+        "route": [
+          "garden",
+          "taxes",
+          "marathon"
+        ],
+        "routeHit": true,
+        "answeredByRelevant": true,
+        "anyMatch": true,
+        "wallMs": 5262.8,
+        "answers": [
+          {
+            "branchId": "garden",
+            "text": "The drip timer waters the tomato bed at 6:40 every morning.",
+            "tier": "hot",
+            "prompt_n": 15,
+            "cache_n": 510,
+            "prompt_ms": 414
+          },
+          {
+            "branchId": "taxes",
+            "text": "I'm sorry, but I can't assist with that.",
+            "tier": "hot",
+            "prompt_n": 15,
+            "cache_n": 528,
+            "prompt_ms": 414.3
+          },
+          {
+            "branchId": "marathon",
+            "text": "The drip timer water the tomatoes when it detects that the tomato is ripe.",
+            "tier": "warm",
+            "prompt_n": 20,
+            "cache_n": 520,
+            "prompt_ms": 514.7
+          }
+        ]
+      },
+      {
+        "id": "garden-far",
+        "route": [
+          "garden",
+          "lisbon",
+          "bookclub"
+        ],
+        "routeHit": true,
+        "answeredByRelevant": true,
+        "anyMatch": true,
+        "wallMs": 9767,
+        "answers": [
+          {
+            "branchId": "garden",
+            "text": "The drip system on the timer waters the tomato bed at 6:40 every morning. Keep the mulch a few inches away from the stems so the plants do not rot at the base d",
+            "tier": "hot",
+            "prompt_n": 15,
+            "cache_n": 510,
+            "prompt_ms": 326.4
+          },
+          {
+            "branchId": "lisbon",
+            "text": "I'm sorry, but I don't have enough information to answer your question.",
+            "tier": "warm",
+            "prompt_n": 20,
+            "cache_n": 526,
+            "prompt_ms": 775.6
+          },
+          {
+            "branchId": "bookclub",
+            "text": "I'm sorry, but I don't have enough information to answer your question.",
+            "tier": "warm",
+            "prompt_n": 20,
+            "cache_n": 530,
+            "prompt_ms": 775.2
+          }
+        ]
+      },
+      {
+        "id": "taxes-close",
+        "route": [
+          "taxes",
+          "network",
+          "cakeclass"
+        ],
+        "routeHit": true,
+        "answeredByRelevant": true,
+        "anyMatch": true,
+        "wallMs": 8682.8,
+        "answers": [
+          {
+            "branchId": "taxes",
+            "text": "Priya Raman set the quarterly estimated payment at $3,150.",
+            "tier": "warm",
+            "prompt_n": 25,
+            "cache_n": 523,
+            "prompt_ms": 1100.1
+          },
+          {
+            "branchId": "network",
+            "text": "Priya Raman set a quarterly estimated tax payment of $1,000.",
+            "tier": "warm",
+            "prompt_n": 25,
+            "cache_n": 504,
+            "prompt_ms": 1100.4
+          },
+          {
+            "branchId": "cakeclass",
+            "text": "Priya Raman set a quarterly estimated tax payment of $1,000.",
+            "tier": "hot",
+            "prompt_n": 25,
+            "cache_n": 512,
+            "prompt_ms": 495.8
+          }
+        ]
+      },
+      {
+        "id": "taxes-far",
+        "route": [
+          "taxes",
+          "bookclub",
+          "cakeclass"
+        ],
+        "routeHit": true,
+        "answeredByRelevant": true,
+        "anyMatch": true,
+        "wallMs": 9073.9,
+        "answers": [
+          {
+            "branchId": "taxes",
+            "text": "Our accountant Priya Raman set the quarterly estimated payment at $3,150.",
+            "tier": "hot",
+            "prompt_n": 21,
+            "cache_n": 528,
+            "prompt_ms": 860.7
+          },
+          {
+            "branchId": "bookclub",
+            "text": "I'm sorry, but I don't have access to your accountant's information.",
+            "tier": "hot",
+            "prompt_n": 21,
+            "cache_n": 535,
+            "prompt_ms": 827
+          },
+          {
+            "branchId": "cakeclass",
+            "text": "The accountant decided we should send in $1,000 for estimated taxes each quarter.",
+            "tier": "hot",
+            "prompt_n": 21,
+            "cache_n": 517,
+            "prompt_ms": 861
+          }
+        ]
+      },
+      {
+        "id": "rustbug-close",
+        "route": [
+          "rustbug",
+          "garden",
+          "cakeclass"
+        ],
+        "routeHit": true,
+        "answeredByRelevant": true,
+        "anyMatch": true,
+        "wallMs": 9515.6,
+        "answers": [
+          {
+            "branchId": "rustbug",
+            "text": "The panic occurred in line 212 of ring_buffer.rs.",
+            "tier": "warm",
+            "prompt_n": 20,
+            "cache_n": 539,
+            "prompt_ms": 746.9
+          },
+          {
+            "branchId": "garden",
+            "text": "The panic in the code was caused by the `&mut [u8]` type, which is not a valid type in Rust.",
+            "tier": "warm",
+            "prompt_n": 20,
+            "cache_n": 505,
+            "prompt_ms": 746.7
+          },
+          {
+            "branchId": "cakeclass",
+            "text": "The panic in the code is caused by the line that checks if the buffer is empty before adding a new line.",
+            "tier": "warm",
+            "prompt_n": 20,
+            "cache_n": 512,
+            "prompt_ms": 853.6
+          }
+        ]
+      },
+      {
+        "id": "rustbug-far",
+        "route": [
+          "rustbug",
+          "lawn",
+          "network"
+        ],
+        "routeHit": true,
+        "answeredByRelevant": true,
+        "anyMatch": true,
+        "wallMs": 11199.9,
+        "answers": [
+          {
+            "branchId": "rustbug",
+            "text": "The crash was traced back to line 212 in the buffer file.",
+            "tier": "hot",
+            "prompt_n": 19,
+            "cache_n": 544,
+            "prompt_ms": 1031.6
+          },
+          {
+            "branchId": "lawn",
+            "text": "I'm sorry, but I don't have access to the specific buffer file you're referring to. Can you provide me with the file name or the line number where the crash occ",
+            "tier": "warm",
+            "prompt_n": 24,
+            "cache_n": 528,
+            "prompt_ms": 1031.1
+          },
+          {
+            "branchId": "network",
+            "text": "The crash was traced back to line 12 in the buffer file.",
+            "tier": "hot",
+            "prompt_n": 18,
+            "cache_n": 510,
+            "prompt_ms": 320.5
+          }
+        ]
+      },
+      {
+        "id": "lisbon-close",
+        "route": [
+          "lisbon",
+          "cakeclass",
+          "officewifi"
+        ],
+        "routeHit": true,
+        "answeredByRelevant": true,
+        "anyMatch": true,
+        "wallMs": 5346.4,
+        "answers": [
+          {
+            "branchId": "lisbon",
+            "text": "The guesthouse is in Alfama.",
+            "tier": "warm",
+            "prompt_n": 22,
+            "cache_n": 526,
+            "prompt_ms": 869.3
+          },
+          {
+            "branchId": "cakeclass",
+            "text": "The guesthouse is in the neighborhood of Lisbon.",
+            "tier": "hot",
+            "prompt_n": 16,
+            "cache_n": 518,
+            "prompt_ms": 266.7
+          },
+          {
+            "branchId": "officewifi",
+            "text": "The guesthouse is in the neighborhood of Vila Nova de Gaia.",
+            "tier": "warm",
+            "prompt_n": 22,
+            "cache_n": 522,
+            "prompt_ms": 870.8
+          }
+        ]
+      },
+      {
+        "id": "lisbon-far",
+        "route": [
+          "taxes",
+          "lisbon",
+          "cakeclass"
+        ],
+        "routeHit": true,
+        "answeredByRelevant": true,
+        "anyMatch": true,
+        "wallMs": 9951.9,
+        "answers": [
+          {
+            "branchId": "taxes",
+            "text": "We are staying in Lisbon, Portugal's capital.",
+            "tier": "warm",
+            "prompt_n": 25,
+            "cache_n": 523,
+            "prompt_ms": 548.2
+          },
+          {
+            "branchId": "lisbon",
+            "text": "We booked the guesthouse in Alfama for four nights starting May 9. From there, the walk to the top viewpoints usually takes about twenty minutes uphill, dependi",
+            "tier": "hot",
+            "prompt_n": 20,
+            "cache_n": 531,
+            "prompt_ms": 488
+          },
+          {
+            "branchId": "cakeclass",
+            "text": "We are staying in Lisbon.",
+            "tier": "hot",
+            "prompt_n": 20,
+            "cache_n": 517,
+            "prompt_ms": 488.2
+          }
+        ]
+      },
+      {
+        "id": "sourdough-close",
+        "route": [
+          "sourdough",
+          "car",
+          "cakeclass"
+        ],
+        "routeHit": true,
+        "answeredByRelevant": true,
+        "anyMatch": true,
+        "wallMs": 14649.5,
+        "answers": [
+          {
+            "branchId": "sourdough",
+            "text": "The starter's name is Clint and it is fed at a 1:5:5 ratio. We feed it once a day at room temperature.",
+            "tier": "warm",
+            "prompt_n": 25,
+            "cache_n": 531,
+            "prompt_ms": 347.6
+          },
+          {
+            "branchId": "car",
+            "text": "The starter is called the alternator. It is fed every 10,000 miles or so, depending on the car's age and the manufacturer's recommendations. It is a simple devi",
+            "tier": "warm",
+            "prompt_n": 25,
+            "cache_n": 535,
+            "prompt_ms": 828.5
+          },
+          {
+            "branchId": "cakeclass",
+            "text": "The starter is called \"Bee's Nectar\" and it is fed every other day.",
+            "tier": "hot",
+            "prompt_n": 20,
+            "cache_n": 517,
+            "prompt_ms": 828.1
+          }
+        ]
+      },
+      {
+        "id": "sourdough-far",
+        "route": [
+          "sourdough",
+          "network",
+          "cakeclass"
+        ],
+        "routeHit": true,
+        "answeredByRelevant": false,
+        "anyMatch": false,
+        "wallMs": 3954.7,
+        "answers": [
+          {
+            "branchId": "sourdough",
+            "text": "We called it the starter.",
+            "tier": "hot",
+            "prompt_n": 19,
+            "cache_n": 537,
+            "prompt_ms": 650
+          },
+          {
+            "branchId": "network",
+            "text": "The sourdough culture you keep on the counter is called the \"sourdough loaf.\"",
+            "tier": "hot",
+            "prompt_n": 19,
+            "cache_n": 510,
+            "prompt_ms": 305.3
+          },
+          {
+            "branchId": "cakeclass",
+            "text": "We call it the sourdough culture.",
+            "tier": "hot",
+            "prompt_n": 19,
+            "cache_n": 518,
+            "prompt_ms": 650.2
+          }
+        ]
+      },
+      {
+        "id": "car-close",
+        "route": [
+          "rustbug",
+          "car",
+          "insurance"
+        ],
+        "routeHit": true,
+        "answeredByRelevant": true,
+        "anyMatch": true,
+        "wallMs": 6101.1,
+        "answers": [
+          {
+            "branchId": "rustbug",
+            "text": "I'm sorry, but I don't have any information about a specific car service. I can only provide general information about car services.",
+            "tier": "warm",
+            "prompt_n": 20,
+            "cache_n": 539,
+            "prompt_ms": 632.7
+          },
+          {
+            "branchId": "car",
+            "text": "The next car service is scheduled for 92,000 miles.",
+            "tier": "hot",
+            "prompt_n": 15,
+            "cache_n": 540,
+            "prompt_ms": 292.9
+          },
+          {
+            "branchId": "insurance",
+            "text": "I'm sorry, but I don't have enough information to provide a specific answer.",
+            "tier": "warm",
+            "prompt_n": 20,
+            "cache_n": 523,
+            "prompt_ms": 632.3
+          }
+        ]
+      },
+      {
+        "id": "car-far",
+        "route": [
+          "car",
+          "bookclub",
+          "lisbon"
+        ],
+        "routeHit": true,
+        "answeredByRelevant": false,
+        "anyMatch": false,
+        "wallMs": 5972.9,
+        "answers": [
+          {
+            "branchId": "car",
+            "text": "The odometer reading is due for a next maintenance visit when it reaches 100,000 miles.",
+            "tier": "hot",
+            "prompt_n": 18,
+            "cache_n": 542,
+            "prompt_ms": 303.9
+          },
+          {
+            "branchId": "bookclub",
+            "text": "The odometer reading is due for its next maintenance visit when it reaches 100,000 miles.",
+            "tier": "warm",
+            "prompt_n": 25,
+            "cache_n": 530,
+            "prompt_ms": 729.3
+          },
+          {
+            "branchId": "lisbon",
+            "text": "The odometer reading is due for maintenance at 10,000 miles.",
+            "tier": "warm",
+            "prompt_n": 25,
+            "cache_n": 526,
+            "prompt_ms": 728.9
+          }
+        ]
+      },
+      {
+        "id": "pgmigration-close",
+        "route": [
+          "pgmigration",
+          "cakeclass",
+          "officewifi"
+        ],
+        "routeHit": true,
+        "answeredByRelevant": true,
+        "anyMatch": true,
+        "wallMs": 8971.4,
+        "answers": [
+          {
+            "branchId": "pgmigration",
+            "text": "The Postgres 17 rollback is run by Marcus, who owns the rollback and the rollback steps are written down and tested so they can be carried out without guesswork",
+            "tier": "warm",
+            "prompt_n": 22,
+            "cache_n": 536,
+            "prompt_ms": 264.3
+          },
+          {
+            "branchId": "cakeclass",
+            "text": "The Postgres 17 rollback is typically handled by the database administrator or a database administrator who is responsible for the database.",
+            "tier": "warm",
+            "prompt_n": 22,
+            "cache_n": 512,
+            "prompt_ms": 852.2
+          },
+          {
+            "branchId": "officewifi",
+            "text": "The rollback of Postgres 17 is typically handled by the database administrator or a database specialist. They are responsible for managing the database and ensu",
+            "tier": "warm",
+            "prompt_n": 22,
+            "cache_n": 522,
+            "prompt_ms": 851.6
+          }
+        ]
+      },
+      {
+        "id": "pgmigration-far",
+        "route": [
+          "pgmigration",
+          "kitchen",
+          "cakeclass"
+        ],
+        "routeHit": true,
+        "answeredByRelevant": false,
+        "anyMatch": false,
+        "wallMs": 6512.3,
+        "answers": [
+          {
+            "branchId": "pgmigration",
+            "text": "The rollback owner is on the hook if the database upgrade has to be undone.",
+            "tier": "hot",
+            "prompt_n": 20,
+            "cache_n": 541,
+            "prompt_ms": 477.2
+          },
+          {
+            "branchId": "kitchen",
+            "text": "The database upgrade is a major project, so it is likely that the database team will be on the hook for any delays or issues that arise.",
+            "tier": "warm",
+            "prompt_n": 25,
+            "cache_n": 508,
+            "prompt_ms": 527.2
+          },
+          {
+            "branchId": "cakeclass",
+            "text": "The database upgrade has to be undone if the team member is on the hook.",
+            "tier": "hot",
+            "prompt_n": 20,
+            "cache_n": 517,
+            "prompt_ms": 477.5
+          }
+        ]
+      },
+      {
+        "id": "party-close",
+        "route": [
+          "party",
+          "cakeclass",
+          "officewifi"
+        ],
+        "routeHit": true,
+        "answeredByRelevant": true,
+        "anyMatch": true,
+        "wallMs": 7162.6,
+        "answers": [
+          {
+            "branchId": "party",
+            "text": "The cake is lemon with raspberry filling from Ruth's bakery.",
+            "tier": "warm",
+            "prompt_n": 21,
+            "cache_n": 517,
+            "prompt_ms": 651.6
+          },
+          {
+            "branchId": "cakeclass",
+            "text": "I'm sorry, but I don't have any information about the flavor of Mia's birthday cake. I can only provide general information about cake flavors.",
+            "tier": "hot",
+            "prompt_n": 16,
+            "cache_n": 517,
+            "prompt_ms": 278.3
+          },
+          {
+            "branchId": "officewifi",
+            "text": "I'm sorry, but I don't have any information about a specific birthday cake for Mia's party. Could you provide more details or context about the cake?",
+            "tier": "warm",
+            "prompt_n": 21,
+            "cache_n": 522,
+            "prompt_ms": 651.9
+          }
+        ]
+      },
+      {
+        "id": "party-far",
+        "route": [
+          "cakeclass",
+          "officewifi",
+          "insurance"
+        ],
+        "routeHit": false,
+        "answeredByRelevant": false,
+        "anyMatch": true,
+        "wallMs": 7070.4,
+        "answers": [
+          {
+            "branchId": "cakeclass",
+            "text": "We settled on a lemon flavor for the celebration dessert.",
+            "tier": "hot",
+            "prompt_n": 16,
+            "cache_n": 518,
+            "prompt_ms": 781.8
+          },
+          {
+            "branchId": "officewifi",
+            "text": "I'm sorry, but I can't assist with that.",
+            "tier": "hot",
+            "prompt_n": 16,
+            "cache_n": 528,
+            "prompt_ms": 280.2
+          },
+          {
+            "branchId": "insurance",
+            "text": "I'm sorry, but I don't have any information about a specific celebration dessert. Could you provide more context or details about the dessert you're referring t",
+            "tier": "warm",
+            "prompt_n": 22,
+            "cache_n": 523,
+            "prompt_ms": 781.2
+          }
+        ]
+      },
+      {
+        "id": "network-close",
+        "route": [
+          "network",
+          "party",
+          "cakeclass"
+        ],
+        "routeHit": true,
+        "answeredByRelevant": true,
+        "anyMatch": true,
+        "wallMs": 4362.6,
+        "answers": [
+          {
+            "branchId": "network",
+            "text": "The new guest network is called OwlNest-Guest on channel 11.",
+            "tier": "warm",
+            "prompt_n": 24,
+            "cache_n": 504,
+            "prompt_ms": 262.9
+          },
+          {
+            "branchId": "party",
+            "text": "The new guest network on the home router is called \"WiFi 6.\"",
+            "tier": "warm",
+            "prompt_n": 24,
+            "cache_n": 517,
+            "prompt_ms": 552.1
+          },
+          {
+            "branchId": "cakeclass",
+            "text": "The name of the new guest network on the home router is Wi-Fi 6.",
+            "tier": "warm",
+            "prompt_n": 24,
+            "cache_n": 512,
+            "prompt_ms": 551.7
+          }
+        ]
+      },
+      {
+        "id": "network-far",
+        "route": [
+          "officewifi",
+          "network",
+          "lisbon"
+        ],
+        "routeHit": true,
+        "answeredByRelevant": false,
+        "anyMatch": false,
+        "wallMs": 15337.3,
+        "answers": [
+          {
+            "branchId": "officewifi",
+            "text": "When visitors join your Wi-Fi at home, it's best to pick a channel that is not currently in use by anyone else in the building. This will help prevent the drops",
+            "tier": "warm",
+            "prompt_n": 25,
+            "cache_n": 522,
+            "prompt_ms": 683.1
+          },
+          {
+            "branchId": "network",
+            "text": "When visitors join your Wi-Fi, choose a unique SSID that is different from the one on your main network. This will prevent the guest network from interfering wi",
+            "tier": "hot",
+            "prompt_n": 19,
+            "cache_n": 510,
+            "prompt_ms": 345.6
+          },
+          {
+            "branchId": "lisbon",
+            "text": "It's best to use a public Wi-Fi network that is not shared with others. If you have a personal Wi-Fi network, it's best to use it for your own use. If you have ",
+            "tier": "warm",
+            "prompt_n": 25,
+            "cache_n": 526,
+            "prompt_ms": 683.4
+          }
+        ]
+      },
+      {
+        "id": "marathon-close",
+        "route": [
+          "marathon",
+          "pgmigration",
+          "cakeclass"
+        ],
+        "routeHit": true,
+        "answeredByRelevant": false,
+        "anyMatch": false,
+        "wallMs": 8049.5,
+        "answers": [
+          {
+            "branchId": "marathon",
+            "text": "The longest run in the marathon training plan is 32 kilometers.",
+            "tier": "warm",
+            "prompt_n": 22,
+            "cache_n": 520,
+            "prompt_ms": 1633.2
+          },
+          {
+            "branchId": "pgmigration",
+            "text": "The longest run in the marathon training plan is 100 miles.",
+            "tier": "warm",
+            "prompt_n": 22,
+            "cache_n": 536,
+            "prompt_ms": 1632.5
+          },
+          {
+            "branchId": "cakeclass",
+            "text": "The longest run in the marathon training plan is typically 10 to 12 miles.",
+            "tier": "warm",
+            "prompt_n": 22,
+            "cache_n": 512,
+            "prompt_ms": 637.5
+          }
+        ]
+      },
+      {
+        "id": "marathon-far",
+        "route": [
+          "marathon",
+          "sourdough",
+          "kitchen"
+        ],
+        "routeHit": true,
+        "answeredByRelevant": false,
+        "anyMatch": false,
+        "wallMs": 12437.6,
+        "answers": [
+          {
+            "branchId": "marathon",
+            "text": "The peak training run is usually 32 kilometers, but it can vary depending on your fitness level and the length of your previous runs.",
+            "tier": "hot",
+            "prompt_n": 15,
+            "cache_n": 526,
+            "prompt_ms": 1218.6
+          },
+          {
+            "branchId": "sourdough",
+            "text": "The peak training run before the race is 100 miles.",
+            "tier": "hot",
+            "prompt_n": 16,
+            "cache_n": 536,
+            "prompt_ms": 372.4
+          },
+          {
+            "branchId": "kitchen",
+            "text": "The peak training run before the race is typically 100 miles.",
+            "tier": "warm",
+            "prompt_n": 21,
+            "cache_n": 508,
+            "prompt_ms": 1218.4
+          }
+        ]
+      },
+      {
+        "id": "bookclub-close",
+        "route": [
+          "bookclub",
+          "pgmigration",
+          "cakeclass"
+        ],
+        "routeHit": true,
+        "answeredByRelevant": true,
+        "anyMatch": true,
+        "wallMs": 7163.7,
+        "answers": [
+          {
+            "branchId": "bookclub",
+            "text": "The book club chose The Dispossessed by Ursula K. Le Guin.",
+            "tier": "warm",
+            "prompt_n": 20,
+            "cache_n": 530,
+            "prompt_ms": 744.1
+          },
+          {
+            "branchId": "pgmigration",
+            "text": "I'm sorry, but I don't have access to your personal book club's choices for this month.",
+            "tier": "hot",
+            "prompt_n": 15,
+            "cache_n": 541,
+            "prompt_ms": 478.2
+          },
+          {
+            "branchId": "cakeclass",
+            "text": "I'm sorry, but I don't have access to the current book club's selections. I can only provide information about the books that have been published recently.",
+            "tier": "warm",
+            "prompt_n": 20,
+            "cache_n": 512,
+            "prompt_ms": 743.8
+          }
+        ]
+      },
+      {
+        "id": "bookclub-far",
+        "route": [
+          "bookclub",
+          "pgmigration",
+          "cakeclass"
+        ],
+        "routeHit": true,
+        "answeredByRelevant": true,
+        "anyMatch": true,
+        "wallMs": 5234.9,
+        "answers": [
+          {
+            "branchId": "bookclub",
+            "text": "The reading group settled on The Dispossessed by Ursula K. Le Guin for this month.",
+            "tier": "hot",
+            "prompt_n": 17,
+            "cache_n": 535,
+            "prompt_ms": 746.8
+          },
+          {
+            "branchId": "pgmigration",
+            "text": "The reading group settled on \"The Art of War\" by Sun Tzu.",
+            "tier": "hot",
+            "prompt_n": 17,
+            "cache_n": 541,
+            "prompt_ms": 746.2
+          },
+          {
+            "branchId": "cakeclass",
+            "text": "The reading group settled on \"The Book of the Month\" for this month.",
+            "tier": "hot",
+            "prompt_n": 17,
+            "cache_n": 517,
+            "prompt_ms": 288.9
+          }
+        ]
+      },
+      {
+        "id": "kitchen-close",
+        "route": [
+          "cakeclass",
+          "officewifi",
+          "insurance"
+        ],
+        "routeHit": false,
+        "answeredByRelevant": false,
+        "anyMatch": false,
+        "wallMs": 10851.1,
+        "answers": [
+          {
+            "branchId": "cakeclass",
+            "text": "I'm sorry, but I don't have access to specific quote information for the cabinets and counters. I recommend checking with your local contractor or contacting th",
+            "tier": "hot",
+            "prompt_n": 17,
+            "cache_n": 517,
+            "prompt_ms": 299.6
+          },
+          {
+            "branchId": "officewifi",
+            "text": "I'm sorry, but I don't have any specific information about the contractor's quote for the cabinets and counters. I would need to ask the user for more details o",
+            "tier": "warm",
+            "prompt_n": 22,
+            "cache_n": 522,
+            "prompt_ms": 828.5
+          },
+          {
+            "branchId": "insurance",
+            "text": "I'm sorry, but I don't have any specific information about a contractor quote for cabinets and counters. Could you provide more details or context about the sit",
+            "tier": "warm",
+            "prompt_n": 22,
+            "cache_n": 523,
+            "prompt_ms": 827.8
+          }
+        ]
+      },
+      {
+        "id": "kitchen-far",
+        "route": [
+          "kitchen",
+          "cakeclass",
+          "officewifi"
+        ],
+        "routeHit": true,
+        "answeredByRelevant": true,
+        "anyMatch": true,
+        "wallMs": 10550.8,
+        "answers": [
+          {
+            "branchId": "kitchen",
+            "text": "The builder quoted $18,400 for the cabinets and quartz counters.",
+            "tier": "warm",
+            "prompt_n": 24,
+            "cache_n": 508,
+            "prompt_ms": 1629.4
+          },
+          {
+            "branchId": "cakeclass",
+            "text": "The builder gave the kitchen cabinetry and countertops a price of $10,000.",
+            "tier": "hot",
+            "prompt_n": 19,
+            "cache_n": 517,
+            "prompt_ms": 328.1
+          },
+          {
+            "branchId": "officewifi",
+            "text": "I'm sorry, but I don't have enough information to answer your question. Could you provide me with more details or context?",
+            "tier": "warm",
+            "prompt_n": 24,
+            "cache_n": 522,
+            "prompt_ms": 1628.4
+          }
+        ]
+      }
+    ]
+  },
+  "tiering": {
+    "decisions": {
+      "hot": 4,
+      "warm": 3,
+      "cold": 9
+    },
+    "before": {
+      "ledger": {
+        "files": 16,
+        "bytes": 102859376,
+        "counters": {
+          "saved": 16,
+          "filesDeleted": 1,
+          "bytesDeleted": 0,
+          "deleteErrors": 0,
+          "releasedWithoutDir": 0,
+          "evictedForBudget": 0,
+          "droppedCold": 0,
+          "restoreFailures": 0,
+          "invalidations": 0,
+          "residentHits": 47,
+          "restores": 49
+        }
+      },
+      "disk": {
+        "files": 16,
+        "bytes": 102859376
+      }
+    },
+    "after": {
+      "ledger": {
+        "files": 7,
+        "bytes": 45467760,
+        "counters": {
+          "saved": 16,
+          "filesDeleted": 10,
+          "bytesDeleted": 57391616,
+          "deleteErrors": 0,
+          "releasedWithoutDir": 0,
+          "evictedForBudget": 0,
+          "droppedCold": 9,
+          "restoreFailures": 0,
+          "invalidations": 0,
+          "residentHits": 47,
+          "restores": 49
+        }
+      },
+      "disk": {
+        "files": 7,
+        "bytes": 45467760
+      }
+    },
+    "coldAsk": {
+      "branchId": "kitchen",
+      "text": "The builder quoted $18,400 for the cabinets and quartz counters.",
+      "correct": true,
+      "wallMs": 10423.8,
+      "tier": "cold",
+      "prompt_n": 532,
+      "cache_n": 0,
+      "prompt_ms": 5067.3
+    },
+    "gardenRepeat": [
+      {
+        "text": "The drip timer waters the tomato bed at 6:40 every morning.",
+        "correct": true,
+        "wallMs": 4965,
+        "tier": "warm",
+        "prompt_n": 20,
+        "cache_n": 505,
+        "prompt_ms": 513.8
+      },
+      {
+        "text": "The drip timer waters the tomato bed at 6:40 every morning.",
+        "correct": true,
+        "wallMs": 3516.5,
+        "tier": "hot",
+        "prompt_n": 1,
+        "cache_n": 524,
+        "prompt_ms": 266.8
+      }
+    ]
+  },
+  "compaction": [
+    {
+      "compactRatio": 0.25,
+      "methods": {
+        "vane": 12
+      },
+      "factRetained": {
+        "hits": 0,
+        "total": 12,
+        "rate": 0
+      },
+      "fullCorrect": {
+        "hits": 18,
+        "total": 24,
+        "rate": 0.75
+      },
+      "compactCorrect": {
+        "hits": 1,
+        "total": 24,
+        "rate": 0.041666666666666664
+      },
+      "agreement": {
+        "hits": 7,
+        "total": 24,
+        "rate": 0.2916666666666667
+      },
+      "lostByCompaction": 17,
+      "gainedByCompaction": 0,
+      "meanPromptTokensFull": 546,
+      "meanPromptTokensCompact": 154,
+      "rows": [
+        {
+          "branchId": "garden",
+          "method": "vane",
+          "sourceTokens": 523,
+          "budgetTokens": 131,
+          "summaryChars": 375,
+          "factRetained": false,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 138,
+            "cache_n": 0,
+            "prompt_ms": 957.3
+          },
+          "wallMs": 971.4,
+          "asks": [
+            {
+              "id": "garden-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 525,
+              "compactCorrect": false,
+              "compactPromptTokens": 153,
+              "text": "The drip timer water the tomatoes at 10 AM."
+            },
+            {
+              "id": "garden-far",
+              "fullCorrect": true,
+              "fullPromptTokens": 525,
+              "compactCorrect": false,
+              "compactPromptTokens": 153,
+              "text": "The vegetables get irrigated each day."
+            }
+          ]
+        },
+        {
+          "branchId": "taxes",
+          "method": "vane",
+          "sourceTokens": 584,
+          "budgetTokens": 146,
+          "summaryChars": 331,
+          "factRetained": false,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 124,
+            "cache_n": 0,
+            "prompt_ms": 1188.8
+          },
+          "wallMs": 1205,
+          "asks": [
+            {
+              "id": "taxes-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 548,
+              "compactCorrect": false,
+              "compactPromptTokens": 144,
+              "text": "According to the conversation, Priya Raman set an estimated tax payment of $1,000 for the quarterly period."
+            },
+            {
+              "id": "taxes-far",
+              "fullCorrect": true,
+              "fullPromptTokens": 549,
+              "compactCorrect": false,
+              "compactPromptTokens": 145,
+              "text": "Our accountant decided we should send in $1,000 in estimated taxes each quarter."
+            }
+          ]
+        },
+        {
+          "branchId": "rustbug",
+          "method": "vane",
+          "sourceTokens": 578,
+          "budgetTokens": 145,
+          "summaryChars": 431,
+          "factRetained": false,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 152,
+            "cache_n": 0,
+            "prompt_ms": 1621.4
+          },
+          "wallMs": 1635.6,
+          "asks": [
+            {
+              "id": "rustbug-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 559,
+              "compactCorrect": false,
+              "compactPromptTokens": 167,
+              "text": "The line in ring_buffer.rs that caused the panic is: \"let buffer = vec![0; 10];\"."
+            },
+            {
+              "id": "rustbug-far",
+              "fullCorrect": true,
+              "fullPromptTokens": 563,
+              "compactCorrect": false,
+              "compactPromptTokens": 171,
+              "text": "The crash was traced back to line 10 in the buffer file."
+            }
+          ]
+        },
+        {
+          "branchId": "lisbon",
+          "method": "vane",
+          "sourceTokens": 531,
+          "budgetTokens": 133,
+          "summaryChars": 395,
+          "factRetained": false,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 153,
+            "cache_n": 0,
+            "prompt_ms": 1002.2
+          },
+          "wallMs": 1014.9,
+          "asks": [
+            {
+              "id": "lisbon-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 548,
+              "compactCorrect": false,
+              "compactPromptTokens": 170,
+              "text": "The guesthouse in Lisbon for the trip is in the neighborhood of Vila Nova de Gaia."
+            },
+            {
+              "id": "lisbon-far",
+              "fullCorrect": true,
+              "fullPromptTokens": 551,
+              "compactCorrect": false,
+              "compactPromptTokens": 173,
+              "text": "We are staying in the city of Lisbon during our visit to Portugal's capital."
+            }
+          ]
+        },
+        {
+          "branchId": "sourdough",
+          "method": "vane",
+          "sourceTokens": 525,
+          "budgetTokens": 132,
+          "summaryChars": 324,
+          "factRetained": false,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 135,
+            "cache_n": 0,
+            "prompt_ms": 1022.4
+          },
+          "wallMs": 1033.9,
+          "asks": [
+            {
+              "id": "sourdough-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 556,
+              "compactCorrect": false,
+              "compactPromptTokens": 155,
+              "text": "The starter's name is sourdough, and we feed it every 2-3 days."
+            },
+            {
+              "id": "sourdough-far",
+              "fullCorrect": false,
+              "fullPromptTokens": 556,
+              "compactCorrect": false,
+              "compactPromptTokens": 155,
+              "text": "The sourdough culture we keep on the counter was called the \"sourdough starter.\""
+            }
+          ]
+        },
+        {
+          "branchId": "car",
+          "method": "vane",
+          "sourceTokens": 558,
+          "budgetTokens": 140,
+          "summaryChars": 397,
+          "factRetained": false,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 150,
+            "cache_n": 0,
+            "prompt_ms": 1024.5
+          },
+          "wallMs": 1036.5,
+          "asks": [
+            {
+              "id": "car-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 555,
+              "compactCorrect": false,
+              "compactPromptTokens": 165,
+              "text": "The next car service is scheduled for 100,000 miles."
+            },
+            {
+              "id": "car-far",
+              "fullCorrect": false,
+              "fullPromptTokens": 560,
+              "compactCorrect": false,
+              "compactPromptTokens": 170,
+              "text": "The vehicle is due for its next maintenance visit at 10,000 miles."
+            }
+          ]
+        },
+        {
+          "branchId": "pgmigration",
+          "method": "vane",
+          "sourceTokens": 569,
+          "budgetTokens": 143,
+          "summaryChars": 321,
+          "factRetained": false,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 124,
+            "cache_n": 0,
+            "prompt_ms": 926.9
+          },
+          "wallMs": 938.5,
+          "asks": [
+            {
+              "id": "pgmigration-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 558,
+              "compactCorrect": false,
+              "compactPromptTokens": 141,
+              "text": "The Postgres 17 rollback is responsible for the rollback of the database to a previous version."
+            },
+            {
+              "id": "pgmigration-far",
+              "fullCorrect": false,
+              "fullPromptTokens": 561,
+              "compactCorrect": false,
+              "compactPromptTokens": 144,
+              "text": "The teammate on the hook if the database upgrade has to be undone is the development team, as they are responsible for the current database and are the ones who will be responsible for the rollback if"
+            }
+          ]
+        },
+        {
+          "branchId": "party",
+          "method": "vane",
+          "sourceTokens": 539,
+          "budgetTokens": 135,
+          "summaryChars": 310,
+          "factRetained": false,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 130,
+            "cache_n": 0,
+            "prompt_ms": 888.1
+          },
+          "wallMs": 900.2,
+          "asks": [
+            {
+              "id": "party-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 538,
+              "compactCorrect": false,
+              "compactPromptTokens": 146,
+              "text": "The birthday cake for Mia's party is a chocolate cake."
+            },
+            {
+              "id": "party-far",
+              "fullCorrect": true,
+              "fullPromptTokens": 539,
+              "compactCorrect": true,
+              "compactPromptTokens": 147,
+              "text": "We settled on a lemon cake for the celebration dessert."
+            }
+          ]
+        },
+        {
+          "branchId": "network",
+          "method": "vane",
+          "sourceTokens": 550,
+          "budgetTokens": 138,
+          "summaryChars": 398,
+          "factRetained": false,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 149,
+            "cache_n": 0,
+            "prompt_ms": 1196.2
+          },
+          "wallMs": 1209.9,
+          "asks": [
+            {
+              "id": "network-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 528,
+              "compactCorrect": false,
+              "compactPromptTokens": 168,
+              "text": "The new guest network on the home router is called \"Guest network\"."
+            },
+            {
+              "id": "network-far",
+              "fullCorrect": false,
+              "fullPromptTokens": 529,
+              "compactCorrect": false,
+              "compactPromptTokens": 169,
+              "text": "When visitors join our Wi-Fi at home, they should pick the \"Home network\" SSID."
+            }
+          ]
+        },
+        {
+          "branchId": "marathon",
+          "method": "vane",
+          "sourceTokens": 552,
+          "budgetTokens": 138,
+          "summaryChars": 332,
+          "factRetained": false,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 129,
+            "cache_n": 0,
+            "prompt_ms": 775
+          },
+          "wallMs": 785.9,
+          "asks": [
+            {
+              "id": "marathon-close",
+              "fullCorrect": false,
+              "fullPromptTokens": 542,
+              "compactCorrect": false,
+              "compactPromptTokens": 146,
+              "text": "The longest run in the marathon training plan is 10 miles."
+            },
+            {
+              "id": "marathon-far",
+              "fullCorrect": false,
+              "fullPromptTokens": 541,
+              "compactCorrect": false,
+              "compactPromptTokens": 145,
+              "text": "The peak training run before the race is typically around 10-12 miles."
+            }
+          ]
+        },
+        {
+          "branchId": "bookclub",
+          "method": "vane",
+          "sourceTokens": 570,
+          "budgetTokens": 143,
+          "summaryChars": 337,
+          "factRetained": false,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 128,
+            "cache_n": 0,
+            "prompt_ms": 772.6
+          },
+          "wallMs": 785.4,
+          "asks": [
+            {
+              "id": "bookclub-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 550,
+              "compactCorrect": false,
+              "compactPromptTokens": 143,
+              "text": "The book club chose the novel \"The Nightingale\" this month."
+            },
+            {
+              "id": "bookclub-far",
+              "fullCorrect": true,
+              "fullPromptTokens": 552,
+              "compactCorrect": false,
+              "compactPromptTokens": 145,
+              "text": "The reading group settled on \"The Great Gatsby\" for this month."
+            }
+          ]
+        },
+        {
+          "branchId": "kitchen",
+          "method": "vane",
+          "sourceTokens": 563,
+          "budgetTokens": 141,
+          "summaryChars": 335,
+          "factRetained": false,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 123,
+            "cache_n": 0,
+            "prompt_ms": 758.5
+          },
+          "wallMs": 769.4,
+          "asks": [
+            {
+              "id": "kitchen-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 530,
+              "compactCorrect": false,
+              "compactPromptTokens": 140,
+              "text": "The contractor quoted a total of $1,000 for the cabinets and counters."
+            },
+            {
+              "id": "kitchen-far",
+              "fullCorrect": true,
+              "fullPromptTokens": 532,
+              "compactCorrect": false,
+              "compactPromptTokens": 142,
+              "text": "The builder gave a price of $10,000 for the kitchen cabinetry and countertops."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "compactRatio": 0.5,
+      "methods": {
+        "vane": 12
+      },
+      "factRetained": {
+        "hits": 0,
+        "total": 12,
+        "rate": 0
+      },
+      "fullCorrect": {
+        "hits": 18,
+        "total": 24,
+        "rate": 0.75
+      },
+      "compactCorrect": {
+        "hits": 1,
+        "total": 24,
+        "rate": 0.041666666666666664
+      },
+      "agreement": {
+        "hits": 7,
+        "total": 24,
+        "rate": 0.2916666666666667
+      },
+      "lostByCompaction": 17,
+      "gainedByCompaction": 0,
+      "meanPromptTokensFull": 546,
+      "meanPromptTokensCompact": 255,
+      "rows": [
+        {
+          "branchId": "garden",
+          "method": "vane",
+          "sourceTokens": 523,
+          "budgetTokens": 262,
+          "summaryChars": 766,
+          "factRetained": false,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 226,
+            "cache_n": 0,
+            "prompt_ms": 1282.9
+          },
+          "wallMs": 1301.4,
+          "asks": [
+            {
+              "id": "garden-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 525,
+              "compactCorrect": false,
+              "compactPromptTokens": 241,
+              "text": "The drip timer water the tomatoes for about twenty minutes."
+            },
+            {
+              "id": "garden-far",
+              "fullCorrect": true,
+              "fullPromptTokens": 525,
+              "compactCorrect": false,
+              "compactPromptTokens": 241,
+              "text": "The vegetables get irrigated each day for about twenty minutes."
+            }
+          ]
+        },
+        {
+          "branchId": "taxes",
+          "method": "vane",
+          "sourceTokens": 584,
+          "budgetTokens": 292,
+          "summaryChars": 835,
+          "factRetained": false,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 240,
+            "cache_n": 0,
+            "prompt_ms": 2315.7
+          },
+          "wallMs": 2336.4,
+          "asks": [
+            {
+              "id": "taxes-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 548,
+              "compactCorrect": false,
+              "compactPromptTokens": 260,
+              "text": "Priya Raman set an estimated tax payment of approximately $1,000 for the quarterly payment."
+            },
+            {
+              "id": "taxes-far",
+              "fullCorrect": true,
+              "fullPromptTokens": 549,
+              "compactCorrect": false,
+              "compactPromptTokens": 261,
+              "text": "Our accountant decided we should send in approximately 10% of our income each quarter for estimated taxes."
+            }
+          ]
+        },
+        {
+          "branchId": "rustbug",
+          "method": "vane",
+          "sourceTokens": 578,
+          "budgetTokens": 289,
+          "summaryChars": 829,
+          "factRetained": false,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 244,
+            "cache_n": 0,
+            "prompt_ms": 3563.5
+          },
+          "wallMs": 3577.1,
+          "asks": [
+            {
+              "id": "rustbug-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 559,
+              "compactCorrect": false,
+              "compactPromptTokens": 259,
+              "text": "The line in ring_buffer.rs that caused the panic is: `let mut buffer = vec![0; 10];`"
+            },
+            {
+              "id": "rustbug-far",
+              "fullCorrect": true,
+              "fullPromptTokens": 563,
+              "compactCorrect": false,
+              "compactPromptTokens": 263,
+              "text": "The backtrace points at our own module, so that helps a lot and narrows the search considerably."
+            }
+          ]
+        },
+        {
+          "branchId": "lisbon",
+          "method": "vane",
+          "sourceTokens": 531,
+          "budgetTokens": 266,
+          "summaryChars": 776,
+          "factRetained": false,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 234,
+            "cache_n": 0,
+            "prompt_ms": 3407.5
+          },
+          "wallMs": 3479.3,
+          "asks": [
+            {
+              "id": "lisbon-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 548,
+              "compactCorrect": false,
+              "compactPromptTokens": 251,
+              "text": "The guesthouse in Lisbon for the trip is in the neighborhood of Vila Nova de Gaia."
+            },
+            {
+              "id": "lisbon-far",
+              "fullCorrect": true,
+              "fullPromptTokens": 551,
+              "compactCorrect": false,
+              "compactPromptTokens": 254,
+              "text": "We are staying in the city center of Lisbon during our visit to Portugal's capital."
+            }
+          ]
+        },
+        {
+          "branchId": "sourdough",
+          "method": "vane",
+          "sourceTokens": 525,
+          "budgetTokens": 263,
+          "summaryChars": 788,
+          "factRetained": false,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 240,
+            "cache_n": 0,
+            "prompt_ms": 2524.1
+          },
+          "wallMs": 2535,
+          "asks": [
+            {
+              "id": "sourdough-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 556,
+              "compactCorrect": false,
+              "compactPromptTokens": 260,
+              "text": "The starter's name is \"Sourdough\", and we feed it once a day at room temperature."
+            },
+            {
+              "id": "sourdough-far",
+              "fullCorrect": false,
+              "fullPromptTokens": 556,
+              "compactCorrect": false,
+              "compactPromptTokens": 260,
+              "text": "The sourdough culture we keep on the counter was called a starter."
+            }
+          ]
+        },
+        {
+          "branchId": "car",
+          "method": "vane",
+          "sourceTokens": 558,
+          "budgetTokens": 279,
+          "summaryChars": 821,
+          "factRetained": false,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 239,
+            "cache_n": 0,
+            "prompt_ms": 1501.1
+          },
+          "wallMs": 1513.8,
+          "asks": [
+            {
+              "id": "car-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 555,
+              "compactCorrect": false,
+              "compactPromptTokens": 254,
+              "text": "The next car service is scheduled for 100,000 miles."
+            },
+            {
+              "id": "car-far",
+              "fullCorrect": false,
+              "fullPromptTokens": 560,
+              "compactCorrect": false,
+              "compactPromptTokens": 259,
+              "text": "The vehicle is due for its next maintenance visit at 10,000 miles."
+            }
+          ]
+        },
+        {
+          "branchId": "pgmigration",
+          "method": "vane",
+          "sourceTokens": 569,
+          "budgetTokens": 285,
+          "summaryChars": 842,
+          "factRetained": false,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 240,
+            "cache_n": 0,
+            "prompt_ms": 1610.6
+          },
+          "wallMs": 1628.1,
+          "asks": [
+            {
+              "id": "pgmigration-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 558,
+              "compactCorrect": false,
+              "compactPromptTokens": 257,
+              "text": "The Postgres 17 rollback is responsible for the rollback of the database to a previous version."
+            },
+            {
+              "id": "pgmigration-far",
+              "fullCorrect": false,
+              "fullPromptTokens": 561,
+              "compactCorrect": false,
+              "compactPromptTokens": 260,
+              "text": "The database upgrade has to be undone, and the team is on the hook for any potential downtime for customers."
+            }
+          ]
+        },
+        {
+          "branchId": "party",
+          "method": "vane",
+          "sourceTokens": 539,
+          "budgetTokens": 270,
+          "summaryChars": 809,
+          "factRetained": false,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 238,
+            "cache_n": 0,
+            "prompt_ms": 1812.6
+          },
+          "wallMs": 1825.7,
+          "asks": [
+            {
+              "id": "party-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 538,
+              "compactCorrect": false,
+              "compactPromptTokens": 254,
+              "text": "The birthday cake for Mia's party is a chocolate cake."
+            },
+            {
+              "id": "party-far",
+              "fullCorrect": true,
+              "fullPromptTokens": 539,
+              "compactCorrect": true,
+              "compactPromptTokens": 255,
+              "text": "The dessert we settled on was a lemon tart."
+            }
+          ]
+        },
+        {
+          "branchId": "network",
+          "method": "vane",
+          "sourceTokens": 550,
+          "budgetTokens": 275,
+          "summaryChars": 801,
+          "factRetained": false,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 231,
+            "cache_n": 0,
+            "prompt_ms": 1491.5
+          },
+          "wallMs": 1506.5,
+          "asks": [
+            {
+              "id": "network-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 528,
+              "compactCorrect": false,
+              "compactPromptTokens": 250,
+              "text": "The name of the new guest network on the home router is Wi-Fi 6."
+            },
+            {
+              "id": "network-far",
+              "fullCorrect": false,
+              "fullPromptTokens": 529,
+              "compactCorrect": false,
+              "compactPromptTokens": 251,
+              "text": "When visitors join our Wi-Fi at home, they should choose a guest network with a different Wi-Fi channel to avoid interference with the main network and ensure smooth connections for everyone."
+            }
+          ]
+        },
+        {
+          "branchId": "marathon",
+          "method": "vane",
+          "sourceTokens": 552,
+          "budgetTokens": 276,
+          "summaryChars": 819,
+          "factRetained": false,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 232,
+            "cache_n": 0,
+            "prompt_ms": 1467.1
+          },
+          "wallMs": 1480.7,
+          "asks": [
+            {
+              "id": "marathon-close",
+              "fullCorrect": false,
+              "fullPromptTokens": 542,
+              "compactCorrect": false,
+              "compactPromptTokens": 249,
+              "text": "The longest run in the marathon training plan is 24 kilometers."
+            },
+            {
+              "id": "marathon-far",
+              "fullCorrect": false,
+              "fullPromptTokens": 541,
+              "compactCorrect": false,
+              "compactPromptTokens": 248,
+              "text": "The peak training run before the race is approximately 10 kilometers."
+            }
+          ]
+        },
+        {
+          "branchId": "bookclub",
+          "method": "vane",
+          "sourceTokens": 570,
+          "budgetTokens": 285,
+          "summaryChars": 851,
+          "factRetained": false,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 246,
+            "cache_n": 0,
+            "prompt_ms": 1848.1
+          },
+          "wallMs": 1863.9,
+          "asks": [
+            {
+              "id": "bookclub-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 550,
+              "compactCorrect": false,
+              "compactPromptTokens": 261,
+              "text": "The book club chose a novel this month, which is a science fiction book."
+            },
+            {
+              "id": "bookclub-far",
+              "fullCorrect": true,
+              "fullPromptTokens": 552,
+              "compactCorrect": false,
+              "compactPromptTokens": 263,
+              "text": "The reading group settled on \"The Martian\" for this month."
+            }
+          ]
+        },
+        {
+          "branchId": "kitchen",
+          "method": "vane",
+          "sourceTokens": 563,
+          "budgetTokens": 282,
+          "summaryChars": 841,
+          "factRetained": false,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 234,
+            "cache_n": 0,
+            "prompt_ms": 1488.2
+          },
+          "wallMs": 1501.3,
+          "asks": [
+            {
+              "id": "kitchen-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 530,
+              "compactCorrect": false,
+              "compactPromptTokens": 251,
+              "text": "The contractor quoted a total of $1,000 for the cabinets and counters."
+            },
+            {
+              "id": "kitchen-far",
+              "fullCorrect": true,
+              "fullPromptTokens": 532,
+              "compactCorrect": false,
+              "compactPromptTokens": 253,
+              "text": "The builder gave a price of $1,000 per unit for the kitchen cabinetry and countertops."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "compactRatio": 0.75,
+      "methods": {
+        "vane": 12
+      },
+      "factRetained": {
+        "hits": 12,
+        "total": 12,
+        "rate": 1
+      },
+      "fullCorrect": {
+        "hits": 18,
+        "total": 24,
+        "rate": 0.75
+      },
+      "compactCorrect": {
+        "hits": 21,
+        "total": 24,
+        "rate": 0.875
+      },
+      "agreement": {
+        "hits": 19,
+        "total": 24,
+        "rate": 0.7916666666666666
+      },
+      "lostByCompaction": 1,
+      "gainedByCompaction": 4,
+      "meanPromptTokensFull": 546,
+      "meanPromptTokensCompact": 350,
+      "rows": [
+        {
+          "branchId": "garden",
+          "method": "vane",
+          "sourceTokens": 523,
+          "budgetTokens": 393,
+          "summaryChars": 1128,
+          "factRetained": true,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 321,
+            "cache_n": 0,
+            "prompt_ms": 2105.8
+          },
+          "wallMs": 2118.5,
+          "asks": [
+            {
+              "id": "garden-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 525,
+              "compactCorrect": true,
+              "compactPromptTokens": 336,
+              "text": "The drip timer waters the tomato bed at 6:40 every morning."
+            },
+            {
+              "id": "garden-far",
+              "fullCorrect": true,
+              "fullPromptTokens": 525,
+              "compactCorrect": true,
+              "compactPromptTokens": 336,
+              "text": "The vegetables get irrigated each day at 6:40."
+            }
+          ]
+        },
+        {
+          "branchId": "taxes",
+          "method": "vane",
+          "sourceTokens": 584,
+          "budgetTokens": 438,
+          "summaryChars": 1280,
+          "factRetained": true,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 338,
+            "cache_n": 0,
+            "prompt_ms": 6048.4
+          },
+          "wallMs": 6121.2,
+          "asks": [
+            {
+              "id": "taxes-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 548,
+              "compactCorrect": true,
+              "compactPromptTokens": 358,
+              "text": "Priya Raman set the quarterly estimated payment at $3,150."
+            },
+            {
+              "id": "taxes-far",
+              "fullCorrect": true,
+              "fullPromptTokens": 549,
+              "compactCorrect": true,
+              "compactPromptTokens": 359,
+              "text": "Our accountant Priya Raman set the quarterly estimated payment at $3,150."
+            }
+          ]
+        },
+        {
+          "branchId": "rustbug",
+          "method": "vane",
+          "sourceTokens": 578,
+          "budgetTokens": 434,
+          "summaryChars": 1233,
+          "factRetained": true,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 338,
+            "cache_n": 0,
+            "prompt_ms": 4723.5
+          },
+          "wallMs": 4902.2,
+          "asks": [
+            {
+              "id": "rustbug-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 559,
+              "compactCorrect": true,
+              "compactPromptTokens": 353,
+              "text": "The panic came from an off-by-one in ring_buffer.rs at line 212."
+            },
+            {
+              "id": "rustbug-far",
+              "fullCorrect": true,
+              "fullPromptTokens": 563,
+              "compactCorrect": false,
+              "compactPromptTokens": 357,
+              "text": "The backtrace points at our own module, so that helps a lot and narrows the search considerably."
+            }
+          ]
+        },
+        {
+          "branchId": "lisbon",
+          "method": "vane",
+          "sourceTokens": 531,
+          "budgetTokens": 399,
+          "summaryChars": 1189,
+          "factRetained": true,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 332,
+            "cache_n": 0,
+            "prompt_ms": 1834.3
+          },
+          "wallMs": 1850.5,
+          "asks": [
+            {
+              "id": "lisbon-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 548,
+              "compactCorrect": true,
+              "compactPromptTokens": 349,
+              "text": "The guesthouse in Alfama for four nights starting May 9 is the recommended neighborhood for a first visit to the city."
+            },
+            {
+              "id": "lisbon-far",
+              "fullCorrect": true,
+              "fullPromptTokens": 551,
+              "compactCorrect": true,
+              "compactPromptTokens": 352,
+              "text": "We booked the guesthouse in Alfama for four nights starting May 9."
+            }
+          ]
+        },
+        {
+          "branchId": "sourdough",
+          "method": "vane",
+          "sourceTokens": 525,
+          "budgetTokens": 394,
+          "summaryChars": 1163,
+          "factRetained": true,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 334,
+            "cache_n": 0,
+            "prompt_ms": 1844.5
+          },
+          "wallMs": 1860.2,
+          "asks": [
+            {
+              "id": "sourdough-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 556,
+              "compactCorrect": true,
+              "compactPromptTokens": 354,
+              "text": "The starter's name is Clint and it gets fed at a 1:5:5 ratio."
+            },
+            {
+              "id": "sourdough-far",
+              "fullCorrect": false,
+              "fullPromptTokens": 556,
+              "compactCorrect": true,
+              "compactPromptTokens": 354,
+              "text": "Clint"
+            }
+          ]
+        },
+        {
+          "branchId": "car",
+          "method": "vane",
+          "sourceTokens": 558,
+          "budgetTokens": 419,
+          "summaryChars": 1237,
+          "factRetained": true,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 340,
+            "cache_n": 0,
+            "prompt_ms": 1911
+          },
+          "wallMs": 1926.4,
+          "asks": [
+            {
+              "id": "car-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 555,
+              "compactCorrect": true,
+              "compactPromptTokens": 355,
+              "text": "The next car service is scheduled for 92,000 miles."
+            },
+            {
+              "id": "car-far",
+              "fullCorrect": false,
+              "fullPromptTokens": 560,
+              "compactCorrect": false,
+              "compactPromptTokens": 360,
+              "text": "The vehicle is due for its next maintenance visit at 1,000 miles."
+            }
+          ]
+        },
+        {
+          "branchId": "pgmigration",
+          "method": "vane",
+          "sourceTokens": 569,
+          "budgetTokens": 427,
+          "summaryChars": 1267,
+          "factRetained": true,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 344,
+            "cache_n": 0,
+            "prompt_ms": 2002.6
+          },
+          "wallMs": 2015,
+          "asks": [
+            {
+              "id": "pgmigration-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 558,
+              "compactCorrect": true,
+              "compactPromptTokens": 361,
+              "text": "Marcus owns the rollback decision."
+            },
+            {
+              "id": "pgmigration-far",
+              "fullCorrect": false,
+              "fullPromptTokens": 561,
+              "compactCorrect": true,
+              "compactPromptTokens": 364,
+              "text": "Marcus is on the hook if the database upgrade has to be undone."
+            }
+          ]
+        },
+        {
+          "branchId": "party",
+          "method": "vane",
+          "sourceTokens": 539,
+          "budgetTokens": 405,
+          "summaryChars": 1211,
+          "factRetained": true,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 334,
+            "cache_n": 0,
+            "prompt_ms": 2236.7
+          },
+          "wallMs": 2252.7,
+          "asks": [
+            {
+              "id": "party-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 538,
+              "compactCorrect": true,
+              "compactPromptTokens": 350,
+              "text": "The birthday cake for Mia's party is lemon with raspberry filling from Ruth's bakery."
+            },
+            {
+              "id": "party-far",
+              "fullCorrect": true,
+              "fullPromptTokens": 539,
+              "compactCorrect": true,
+              "compactPromptTokens": 351,
+              "text": "The dessert we settled on was a lemon with raspberry filling from Ruth's bakery."
+            }
+          ]
+        },
+        {
+          "branchId": "network",
+          "method": "vane",
+          "sourceTokens": 550,
+          "budgetTokens": 413,
+          "summaryChars": 1197,
+          "factRetained": true,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 319,
+            "cache_n": 0,
+            "prompt_ms": 2291.7
+          },
+          "wallMs": 2307.5,
+          "asks": [
+            {
+              "id": "network-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 528,
+              "compactCorrect": true,
+              "compactPromptTokens": 338,
+              "text": "The new guest network on the home router is called OwlNest-Guest on channel 11."
+            },
+            {
+              "id": "network-far",
+              "fullCorrect": false,
+              "fullPromptTokens": 529,
+              "compactCorrect": true,
+              "compactPromptTokens": 339,
+              "text": "When visitors join our Wi-Fi at home, they should pick the SSID (network name) OwlNest-Guest on channel 11."
+            }
+          ]
+        },
+        {
+          "branchId": "marathon",
+          "method": "vane",
+          "sourceTokens": 552,
+          "budgetTokens": 414,
+          "summaryChars": 1240,
+          "factRetained": true,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 323,
+            "cache_n": 0,
+            "prompt_ms": 2097.1
+          },
+          "wallMs": 2110.8,
+          "asks": [
+            {
+              "id": "marathon-close",
+              "fullCorrect": false,
+              "fullPromptTokens": 542,
+              "compactCorrect": false,
+              "compactPromptTokens": 340,
+              "text": "The longest run in the marathon training plan is 32 kilometers."
+            },
+            {
+              "id": "marathon-far",
+              "fullCorrect": false,
+              "fullPromptTokens": 541,
+              "compactCorrect": true,
+              "compactPromptTokens": 339,
+              "text": "The plan peaks with a 32 km long run three weeks before race day."
+            }
+          ]
+        },
+        {
+          "branchId": "bookclub",
+          "method": "vane",
+          "sourceTokens": 570,
+          "budgetTokens": 428,
+          "summaryChars": 1270,
+          "factRetained": true,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 337,
+            "cache_n": 0,
+            "prompt_ms": 2183.6
+          },
+          "wallMs": 2197.9,
+          "asks": [
+            {
+              "id": "bookclub-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 550,
+              "compactCorrect": true,
+              "compactPromptTokens": 352,
+              "text": "The Dispossessed by Ursula K."
+            },
+            {
+              "id": "bookclub-far",
+              "fullCorrect": true,
+              "fullPromptTokens": 552,
+              "compactCorrect": true,
+              "compactPromptTokens": 354,
+              "text": "The reading group settled on The Dispossessed by Ursula K. for this month."
+            }
+          ]
+        },
+        {
+          "branchId": "kitchen",
+          "method": "vane",
+          "sourceTokens": 563,
+          "budgetTokens": 423,
+          "summaryChars": 1262,
+          "factRetained": true,
+          "prefill": {
+            "tier": "cold",
+            "prompt_n": 324,
+            "cache_n": 0,
+            "prompt_ms": 2191.1
+          },
+          "wallMs": 2206.5,
+          "asks": [
+            {
+              "id": "kitchen-close",
+              "fullCorrect": true,
+              "fullPromptTokens": 530,
+              "compactCorrect": true,
+              "compactPromptTokens": 341,
+              "text": "The contractor quoted $18,400 for the cabinets and quartz counters."
+            },
+            {
+              "id": "kitchen-far",
+              "fullCorrect": true,
+              "fullPromptTokens": 532,
+              "compactCorrect": true,
+              "compactPromptTokens": 343,
+              "text": "The builder gave a price of $18,400 for the cabinets and quartz counters."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "budget": {
+    "budgetBytes": 19286133,
+    "ledger": {
+      "files": 2,
+      "bytes": 13117344,
+      "counters": {
+        "saved": 6,
+        "filesDeleted": 5,
+        "bytesDeleted": 25754832,
+        "deleteErrors": 0,
+        "releasedWithoutDir": 0,
+        "evictedForBudget": 4,
+        "droppedCold": 0,
+        "restoreFailures": 0,
+        "invalidations": 0,
+        "residentHits": 0,
+        "restores": 0
+      }
+    },
+    "disk": {
+      "files": 2,
+      "bytes": 13117344
+    },
+    "limit": {
+      "limitBytes": 19286133,
+      "boundBy": "budget",
+      "reserveBytes": 403217342,
+      "fsAvailableBytes": 72635609088,
+      "at": "2026-10-19T00:26:31.154Z"
+    },
+    "lastEviction": {
+      "at": "2026-10-19T00:26:31.154Z",
+      "evicted": 1,
+      "limitBytes": 19286133,
+      "boundBy": "budget",
+      "ownBytesAfter": 13117344
+    },
+    "evictedAsk": {
+      "text": "The drip timer waters the tomato bed at 6:40 every morning.",
+      "correct": true,
+      "wallMs": 6726.7,
+      "tier": "cold",
+      "prompt_n": 525,
+      "cache_n": 0,
+      "prompt_ms": 3486
+    }
+  },
+  "close": {
+    "closeA": {
+      "filesDeleted": 43,
+      "bytesDeleted": 149619552
+    },
+    "closeB": {
+      "filesDeleted": 2,
+      "bytesDeleted": 13117344
+    },
+    "remainingA": {
+      "files": 0,
+      "bytes": 0
+    },
+    "remainingB": {
+      "files": 0,
+      "bytes": 0
+    },
+    "countersA": {
+      "saved": 52,
+      "filesDeleted": 53,
+      "bytesDeleted": 207011168,
+      "deleteErrors": 0,
+      "releasedWithoutDir": 0,
+      "evictedForBudget": 0,
+      "droppedCold": 9,
+      "restoreFailures": 0,
+      "invalidations": 0,
+      "residentHits": 120,
+      "restores": 50
+    }
+  }
+}

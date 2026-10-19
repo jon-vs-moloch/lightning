@@ -47,7 +47,15 @@ Status:
 - done: branch generate
 - done: checkpoint/restore, fork and prefix reuse as native KV operations when `llama-server` runs with `--slot-save-path` (startup probe; reported native or emulated, with the reason); measured 2026-10-18
 - open: `freeze`, `thaw` and `loadModel` are still emulated
-- open: slot-file garbage collection
+- done: managed slot files ([MANAGED_TREE.md](MANAGED_TREE.md)), measured 2026-10-19:
+  - hot/warm/cold tiers through the thermal planner;
+  - files deleted when nothing holds them;
+  - a disk limit derived from free space, with an optional operator budget;
+  - per-process file names;
+  - invalidation on a build, model, quantization or context change.
+- done (v0): router (`fanOutRouted`) over per-branch summaries, BM25 plus recency; 22/24 relevant tips at k = 3 on the synthetic eval
+- open: embeddings for the router; a held-out eval set
+- open: the background maintainer (event-triggered prefill, compaction and cooling; designed in MANAGED_TREE.md, not built)
 - open: persistence (the branch store and checkpoint metadata are in memory)
 
 ## Phase 3: Successor compaction
@@ -61,6 +69,12 @@ Deliverables:
 - consult elder branch ephemerally
 - explicit parent/child/successor lineage
 - begin explicit checkpoint-head semantics instead of implicit transcript continuity
+
+Status:
+- started: compaction v0 (`compactBranch`) writes a Vane fit of a branch into a new, prefilled branch and leaves the original intact.
+  - Measured on the synthetic eval: at 0.75× the source tokens, 12/12 planted facts were kept and 21/24 answers were correct (full branch: 18/24).
+  - At 0.5× and 0.25×, every fact was lost.
+  - Not yet: archive, successor lineage, automatic triggers.
 
 ## Phase 4: Candle integration
 

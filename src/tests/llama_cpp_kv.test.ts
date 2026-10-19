@@ -200,7 +200,7 @@ function assistantMessage(content: string) {
 test("llama.cpp adapter reports emulated KV with the refusal reason when slot save is unavailable", async () => {
   const fake = await startFakeLlamaServer({ slotSave: false, totalSlots: 2 });
   try {
-    const adapter = new LlamaCppAdapter({ baseUrl: fake.baseUrl });
+    const adapter = new LlamaCppAdapter({ baseUrl: fake.baseUrl, slotFilePrefix: "lightning", slotAffinity: false });
     const probe = await adapter.probeKvSupport();
 
     assert.equal(probe.mode, "emulated");
@@ -230,7 +230,7 @@ test("llama.cpp adapter reports emulated KV with the refusal reason when slot sa
 test("llama.cpp adapter uses native slot save/restore once probed", async () => {
   const fake = await startFakeLlamaServer({ slotSave: true, totalSlots: 2 });
   try {
-    const adapter = new LlamaCppAdapter({ baseUrl: fake.baseUrl });
+    const adapter = new LlamaCppAdapter({ baseUrl: fake.baseUrl, slotFilePrefix: "lightning", slotAffinity: false });
     const probe = await adapter.probeKvSupport();
 
     assert.equal(probe.mode, "native");
@@ -326,7 +326,7 @@ test("llama.cpp adapter uses native slot save/restore once probed", async () => 
 test("a forked branch inherits its parent's KV file", async () => {
   const fake = await startFakeLlamaServer({ slotSave: true, totalSlots: 2 });
   try {
-    const adapter = new LlamaCppAdapter({ baseUrl: fake.baseUrl });
+    const adapter = new LlamaCppAdapter({ baseUrl: fake.baseUrl, slotFilePrefix: "lightning", slotAffinity: false });
     await adapter.probeKvSupport();
 
     await adapter.createBranch(createTestBranch({ id: "p" }));
@@ -371,7 +371,7 @@ test("a forked branch inherits its parent's KV file", async () => {
 test("runtime fans one query out to several checkpoints in parallel on distinct slots", async () => {
   const fake = await startFakeLlamaServer({ slotSave: true, totalSlots: 3 });
   try {
-    const adapter = new LlamaCppAdapter({ baseUrl: fake.baseUrl });
+    const adapter = new LlamaCppAdapter({ baseUrl: fake.baseUrl, slotFilePrefix: "lightning", slotAffinity: false });
     const probe = await adapter.probeKvSupport();
     assert.equal(probe.mode, "native");
 
@@ -465,7 +465,7 @@ test("runtime fans one query out to several checkpoints in parallel on distinct 
 test("fan-out refuses two checkpoints on the same branch", async () => {
   const fake = await startFakeLlamaServer({ slotSave: true, totalSlots: 3 });
   try {
-    const adapter = new LlamaCppAdapter({ baseUrl: fake.baseUrl });
+    const adapter = new LlamaCppAdapter({ baseUrl: fake.baseUrl, slotFilePrefix: "lightning", slotAffinity: false });
     const probe = await adapter.probeKvSupport();
     assert.equal(probe.mode, "native");
 

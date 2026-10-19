@@ -1,4 +1,6 @@
 import type { LightningAdapter } from "./adapter.js";
+import { routeQuery, summarizeBranch } from "./router.js";
+import type { BranchSummary, RouteScore, RouterDoc, VaneModule } from "./router.js";
 import { planThermalTransitions } from "./scheduler.js";
 import { InMemoryBranchStore } from "./store.js";
 import type {
@@ -46,6 +48,7 @@ export class LightningRuntime {
   private readonly store = new InMemoryBranchStore();
   private readonly adapters = new Map<string, LightningAdapter>();
   private readonly threadHeads = new Map<string, string>();
+  private readonly summaryCache = new Map<string, { key: string; summary: BranchSummary }>();
 
   registerAdapter(adapter: LightningAdapter): void {
     this.adapters.set(adapter.id, adapter);
@@ -294,8 +297,16 @@ export class LightningRuntime {
 
   async restoreBranch(branchId: string, checkpointId: string): Promise<BranchRecord> {
     const branch = this.store.getBranch(branchId);
-    const checkpoint = branch.checkpoints.find((item) => item.id === checkpointId);
-    if (!checkpoint) {
+    // Resolve from the store's checkpoint index, not branch.checkpoints: a restore
+    // rewinds the branch's CURRENT checkpoint list, so a later abandoned checkpoint
+    // would no longer be listed there even though it is still addressable.
+    let checkpoint: BranchCheckpoint;
+    try {
+      checkpoint = this.store.getCheckpoint(checkpointId);
+    } catch {
+      throw new Error(`Unknown checkpoint for branch ${branchId}: ${checkpointId}`);
+    }
+    if (checkpoint.branchId !== branchId) {
       throw new Error(`Unknown checkpoint for branch ${branchId}: ${checkpointId}`);
     }
 
@@ -363,6 +374,256 @@ export class LightningRuntime {
     });
 
     return decisions;
+  }
+
+  /**
+   * Run the thermal planner and tell the backend each branch's current tier.
+   * Every decision is forwarded to the branch's adapter via the optional
+   * `applyTemperature` hook — for ALL decisions, not only changed ones, so a newly
+   * attached backend learns every tier. Call this on events (new turn, branch going
+   * idle) to keep backend-side KV residency in step with the planner. Returns the
+   * planner's decisions.
+   */
+  async manageKv(activeBranchIds: string[] = [], maxHotBranches?: number) {
+    const decisions = this.applyThermalPlan(activeBranchIds, maxHotBranches);
+    for (const decision of decisions) {
+      const adapter = await this.requireAdapter(this.getBranch(decision.branchId).backend);
+      await adapter.applyTemperature?.(decision.branchId, decision.to);
+    }
+    return decisions;
+  }
+
+  /**
+   * Summarize a branch (Vane when installed, extractive fallback otherwise),
+   * cached per branch until its message count, updatedAt, budget or vane setting
+   * change, so repeated routing does not re-run the fit.
+   */
+  async summarizeBranch(
+    branchId: string,
+    options: { budgetTokens?: number; vane?: VaneModule | null } = {}
+  ): Promise<BranchSummary> {
+    const branch = this.getBranch(branchId);
+    const messages = this.getMessages(branchId);
+    const key = `${messages.length}:${branch.updatedAt}:${options.budgetTokens ?? 160}:${
+      options.vane === null ? "novane" : "auto"
+    }`;
+    const cached = this.summaryCache.get(branchId);
+    if (cached && cached.key === key) {
+      return cached.summary;
+    }
+    const summary = await summarizeBranch(branch.title, messages, options);
+    this.summaryCache.set(branchId, { key, summary });
+    return summary;
+  }
+
+  /**
+   * Route a query to the most relevant branch tips. Candidates are non-frozen
+   * branches that have at least one checkpoint; the tip is the LAST entry of
+   * branch.checkpoints. With index "summary" (default) the router scores
+   * title + "\n" + summary.text; with "full" it scores the title plus the whole
+   * transcript text (all message contents joined by "\n"). Summaries are computed
+   * in both modes so callers can display them.
+   */
+  async routeBranches(
+    query: string,
+    options: {
+      k: number;
+      index?: "summary" | "full";
+      budgetTokens?: number;
+      vane?: VaneModule | null;
+      recencyWeight?: number;
+      halfLifeMs?: number;
+      now?: number;
+    }
+  ): Promise<{ route: RouteScore[]; summaries: Record<string, BranchSummary> }> {
+    const docs: RouterDoc[] = [];
+    const summaries: Record<string, BranchSummary> = {};
+    for (const branch of this.listBranches()) {
+      if (branch.temperature === "frozen") continue;
+      const tip = branch.checkpoints[branch.checkpoints.length - 1];
+      if (!tip) continue;
+      summaries[branch.id] = await this.summarizeBranch(branch.id, {
+        budgetTokens: options.budgetTokens,
+        vane: options.vane
+      });
+      const text =
+        options.index === "full"
+          ? `${branch.title}\n${this.getMessages(branch.id)
+              .map((message) => message.content)
+              .join("\n")}`
+          : `${branch.title}\n${summaries[branch.id].text}`;
+      docs.push({
+        branchId: branch.id,
+        checkpointId: tip.id,
+        text,
+        updatedAt: Date.parse(branch.updatedAt)
+      });
+    }
+    const route = routeQuery(query, docs, {
+      k: options.k,
+      recencyWeight: options.recencyWeight,
+      halfLifeMs: options.halfLifeMs,
+      now: options.now
+    });
+    return { route, summaries };
+  }
+
+  /**
+   * Router picks the top-k tips and the query fans out to them in parallel.
+   * persist=false (default) answers ephemerally: each selected branch is restored
+   * to its tip and answered without appending anything, so the branches do not
+   * grow. persist=true uses the persisting fan-out from checkpoints instead.
+   * Returns the route, the summaries used, and the per-branch answers.
+   */
+  async fanOutRouted(
+    query: string,
+    k: number,
+    request: GenerateRequest = {},
+    options: {
+      persist?: boolean;
+      index?: "summary" | "full";
+      budgetTokens?: number;
+      vane?: VaneModule | null;
+      recencyWeight?: number;
+    } = {}
+  ): Promise<{
+    route: RouteScore[];
+    summaries: Record<string, BranchSummary>;
+    answers: Array<{
+      branchId: string;
+      checkpointId: string;
+      generation: GenerateResult;
+      checkpoint?: BranchCheckpoint;
+    }>;
+  }> {
+    const { route, summaries } = await this.routeBranches(query, {
+      k,
+      index: options.index,
+      budgetTokens: options.budgetTokens,
+      vane: options.vane,
+      recencyWeight: options.recencyWeight
+    });
+    if (route.length === 0) {
+      return { route, summaries, answers: [] };
+    }
+
+    if (options.persist) {
+      const results = await this.fanOutFromCheckpoints(
+        route.map((entry) => entry.checkpointId),
+        { role: "user", content: query },
+        request
+      );
+      return {
+        route,
+        summaries,
+        answers: results.map((result) => ({
+          branchId: result.branch.id,
+          checkpointId: result.checkpointId,
+          generation: result.generation,
+          checkpoint: result.checkpoint
+        }))
+      };
+    }
+
+    await Promise.all(
+      route.map((entry) => this.restoreBranch(entry.branchId, entry.checkpointId))
+    );
+    const answers = await Promise.all(
+      route.map(async (entry) => ({
+        branchId: entry.branchId,
+        checkpointId: entry.checkpointId,
+        generation: await this.generateEphemeral(entry.branchId, {
+          ...request,
+          messages: [
+            ...this.getMessages(entry.branchId),
+            { role: "user", content: query, createdAt: new Date().toISOString() }
+          ]
+        })
+      }))
+    );
+    return { route, summaries, answers };
+  }
+
+  /**
+   * Compaction keeps the original branch intact and creates a NEW branch whose
+   * messages are the original's leading system messages plus a sentence-level
+   * Vane fit (or extractive fallback, recorded in summary.method) of the rest
+   * of the transcript at `budgetTokens`; with prefill
+   * (default true) the new branch is prefilled once on the backend so its KV is
+   * saved, then checkpointed. The canonical original text is never modified.
+   *
+   * parentId is deliberately null: a backend may inherit a parent's KV state on
+   * createBranch, and the compacted branch must NOT start from the original's KV
+   * (its prompt is different). Lineage is recorded in metadata.compactedFrom
+   * instead.
+   */
+  async compactBranch(
+    branchId: string,
+    options: { newBranchId: string; budgetTokens: number; prefill?: boolean; vane?: VaneModule | null }
+  ): Promise<{
+    branch: BranchRecord;
+    checkpoint: BranchCheckpoint;
+    summary: BranchSummary;
+    prefill?: GenerateResult;
+  }> {
+    const source = this.getBranch(branchId);
+    const allMessages = this.getMessages(branchId);
+    // Leading system messages are instructions, not history: they are kept
+    // verbatim and only the conversation after them is compacted.
+    const leadingSystem: MessageRecord[] = [];
+    for (const message of allMessages) {
+      if (message.role !== "system") break;
+      leadingSystem.push(message);
+    }
+    const messages = allMessages.slice(leadingSystem.length);
+    // The router.ts function, NOT the cached summarizeBranch method: the fit must
+    // always run at the caller's budget.
+    const summary = await summarizeBranch(source.title, messages, {
+      budgetTokens: options.budgetTokens,
+      vane: options.vane,
+      tree: "sentences"
+    });
+    const branch = await this.createBranch({
+      id: options.newBranchId,
+      title: `${source.title} (compacted)`,
+      kind: source.kind,
+      category: source.category,
+      responsibility: source.responsibility,
+      backend: source.backend,
+      modelRef: source.modelRef,
+      parentId: null,
+      priority: source.priority,
+      metadata: {
+        ...source.metadata,
+        compactedFrom: source.id,
+        compactedFromCheckpoint: source.checkpoints.at(-1)?.id ?? null,
+        compaction: {
+          method: summary.method,
+          budgetTokens: options.budgetTokens,
+          sourceChars: summary.sourceChars,
+          outputChars: summary.text.length,
+          sourceMessages: messages.length
+        }
+      }
+    });
+    await this.appendMessages(branch.id, [
+      ...leadingSystem.map((message) => ({ role: message.role, content: message.content })),
+      {
+        role: "system",
+        content: `Compacted context of branch "${source.title}" (${summary.method}, ${messages.length} messages):\n${summary.text}`
+      }
+    ]);
+    let prefill;
+    if (options.prefill !== false) {
+      prefill = await this.generate(branch.id, { maxOutputTokens: 1, temperature: 0 });
+    }
+    const checkpoint = await this.checkpointBranch(branch.id, "compacted");
+    return {
+      branch: this.getBranch(branch.id),
+      checkpoint,
+      summary,
+      ...(prefill ? { prefill } : {})
+    };
   }
 
   private async requireAdapter(adapterId: string): Promise<LightningAdapter> {

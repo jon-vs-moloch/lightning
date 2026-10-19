@@ -3,6 +3,7 @@ import type {
   BranchCheckpoint,
   BranchRecord,
   BranchStats,
+  BranchTemperature,
   GenerateRequest,
   GenerateResult,
   MessageRecord
@@ -32,6 +33,13 @@ export interface LightningAdapter {
 
   freezeBranch(branchId: string): Promise<void>;
   thawBranch(branchId: string): Promise<void>;
+
+  /**
+   * Tell the backend a branch's thermal tier changed. hot = keep KV resident in a slot
+   * when possible, warm = KV saved on disk, cold = text only (the backend may drop KV
+   * and re-prefill on demand), frozen = read-only.
+   */
+  applyTemperature?(branchId: string, temperature: BranchTemperature): Promise<void>;
 
   branchStats(branchId: string): Promise<BranchStats>;
   estimateTokens(branchId: string, payload: GenerateRequest): Promise<number>;

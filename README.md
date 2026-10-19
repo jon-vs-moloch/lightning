@@ -49,6 +49,10 @@ A small, typed, tested TypeScript scaffold (about 3k lines, no runtime dependenc
 - a fake adapter for demos and tests;
 - a working `llama.cpp` adapter with native KV checkpoints when `llama-server` runs with `--slot-save-path` (slot save/restore, checked by a startup probe), plus a process manager that starts and supervises `llama-server` for you;
 - fan-out from checkpoints (`fanOutFromCheckpoints`): one request against several checkpoints on distinct branches in parallel, one slot each;
+- a managed KV tree ([`docs/MANAGED_TREE.md`](docs/MANAGED_TREE.md)): hot, warm and cold tiers driven by the thermal planner (`manageKv`); slot files deleted when nothing holds them; and a disk limit derived from free space, with an optional operator budget;
+  - invalidation when the llama.cpp build, model, quantization or context changes;
+- a router (`fanOutRouted(query, k)`) that picks the relevant tips by a per-branch summary (Vane when installed, else extractive) plus BM25 and recency, then fans out to them;
+- compaction v0 (`compactBranch`): a new, prefilled branch holding a Vane fit of a long branch, with the original left intact;
 - an HTTP API on `127.0.0.1:8787`:
   - persistent threads: `POST /v1/threads/:id/messages`, `GET /v1/threads/:id`, `POST /v1/threads/:id/pin`;
   - checkpoint-native turns: `POST /v1/checkpoints/:id/respond`, `GET /v1/checkpoints/:id`;
@@ -57,7 +61,7 @@ A small, typed, tested TypeScript scaffold (about 3k lines, no runtime dependenc
   - POST bodies must be `content-type: application/json` and at most 1 MiB (otherwise `415` or `413`). A frozen branch is read-only: turns, pins and checkpoint responses on it get `409` until it is thawed.
   - The server only answers requests whose `Host` header names it: `localhost`, `127.0.0.1` or `[::1]` with the port it listens on, plus any configured host. Everything else gets `403`. This blocks DNS-rebinding pages from reaching the API through the browser. `HOST` set to a specific address is allowed automatically on `PORT`. If you bind a wildcard address (`HOST=0.0.0.0`), sit behind a proxy, or publish the port under another number (a container's `8787` mapped to `localhost:9000`), list what clients send in `LIGHTNING_ALLOWED_HOSTS` (comma-separated; `host` matches any port, `host:port` only that port). A loopback name on another port is accepted only when it is listed, so the check stays fail-closed. Bad request bodies (a missing `message`, or a missing, empty or malformed `messages` array) get `400`, and an unknown thread or checkpoint gets `404`.
 
-What is honest to say about it today: native KV checkpoints exist for `llama.cpp` when the server is started with a slot save path; otherwise the adapter reports the branch operations as emulated and says why. The branch store and checkpoint metadata are in memory, so persistence, successor compaction, slot-file garbage collection and streaming are still not done.
+What is honest to say about it today: native KV checkpoints exist for `llama.cpp` when the server is started with a slot save path; otherwise the adapter reports the branch operations as emulated and says why. Slot files are now managed: tiered, deleted and kept under a disk limit (when Lightning can reach the slot directory on the same host). The router and compaction are v0 and measured on a small synthetic set (below). The branch store and checkpoint metadata are in memory, so persistence, the background maintainer and streaming are still not done.
 
 ## Measured: branches without prefill
 
@@ -83,17 +87,69 @@ Conditions: Oracle Cloud Ampere A1, 4 x Neoverse-N1 vCPU, 23.4 GiB RAM, CPU only
 
 Fidelity: cache_n + prompt_n of the restored run equals the cold prompt_n exactly (3,085 + 28 = 3,113), so the restored KV is token-identical to the re-rendered transcript — no chat-template drift for this model. At temperature 0, 7 of 12 fan-out replies were byte-identical to the sequential cold replies. The cold parallel run also differed from cold sequential on 5 of 12, so the differences come from batched CPU floating-point order, not from the restore.
 
-Cost: each saved slot file is about 12 KiB per token for this model — about 37 MB for a 3k-token branch. 28 files took 984 MB after the 3-rep run. Nothing garbage-collects them yet.
+Cost: each saved slot file is about 12 KiB per token for this model — about 37 MB for a 3k-token branch. 28 files took 984 MB after the 3-rep run of this demo, which predates slot-file management (next section).
 
 What is still emulated:
 
 - `loadModel`, `freeze`, `thaw` and ephemeral consult
 - the branch store and checkpoint metadata are in memory (the KV files survive a crash; the tree does not)
-- no slot-file garbage collection
 - no streaming, so the demo reports server-side prompt_ms, not client time-to-first-token
 - one model on one CPU host; a slot pool larger than llama-server's `--parallel` is not possible, so fan-out width is capped by slots and extra requests wait
 
 To reproduce, see [With a real model](#with-a-real-model) below. Raw results: [`docs/results/kv-cache-cedar-b11719-20261018.json`](docs/results/kv-cache-cedar-b11719-20261018.json) ([.txt](docs/results/kv-cache-cedar-b11719-20261018.txt)). Demo source: [`src/examples/kv-cache-demo.ts`](src/examples/kv-cache-demo.ts).
+
+## Measured: the managed tree
+
+A tree of KV tips needs upkeep: deleting files nobody needs, deciding which branches stay hot, picking which tips a question should reach, and compacting long branches. [`docs/MANAGED_TREE.md`](docs/MANAGED_TREE.md) describes the rules. The eval below ([`src/examples/managed-tree-eval.ts`](src/examples/managed-tree-eval.ts), `npm run eval:managed`) measures them on the same Cedar host and model as above. It uses 16 synthetic branches of 8 turns each, about 520 prompt tokens per branch. Twelve branches hold one planted fact each, and there are 24 questions, two per fact: a "close" wording and a "far" paraphrase. Four distractor branches share vocabulary with the fact branches.
+
+**Conditions.** llama.cpp b11719, Qwen2.5-0.5B-Instruct Q8_0, `--parallel 4 -c 32768 --cache-ram 0 -t 4`, Node v22.23.2, answers at temperature 0 with up to 48 tokens. The host was **shared**: another benchmark's llama-server was using the CPU throughout, with load average 7.6 to 9.9 on 4 cores. Generation ran at about 6 tokens/s, so treat every wall time here as a contended upper bound. Token counts and hit rates do not depend on load. Vane `@owl-kestrel/vane` 0.1.0 was installed for this run. Single run, 2026-10-19 00:13Z to 00:26Z.
+
+**Cleanup and tiers**
+
+| | Measured |
+|---|---|
+| 16 branches built: ledger vs disk | 16 files, 102,859,376 B, identical on both sides (12,305 B per token) |
+| Disk limit with no operator budget | filesystem-bound; reserve 403,219,083 B (4 slots × 8,192 ctx × measured B/token) |
+| `manageKv` with 4 active branches | 4 hot, 3 warm, 9 cold; files on disk 16 → 7 (102.9 MB → 45.5 MB) |
+| Question on a cold branch (text only) | full re-prefill: 532 evaluated, 0 reused; answer still correct |
+| Same question twice on one branch | warm (restore): 20 evaluated / 505 reused → hot (resident slot, no restore): 1 evaluated / 524 reused |
+| Operator budget of 3 × mean file (19,286,133 B), 6 branches built | 4 files evicted coldest-first; 2 files (13,117,344 B) left, on disk and in the ledger; the evicted oldest branch answered from a cold re-prefill, correct |
+| `close()` at the end | 43 + 2 files deleted; 0 of this run's files left on disk |
+| Server restarted with a different per-slot context (separate check) | fingerprint changed, 1 file invalidated and deleted, next turn ran cold ([log](docs/results/managed-tree-fingerprint-check-20261019.txt)) |
+
+**Router v0** (lexical BM25 + recency; offline, no model)
+
+| Index | hit@1 | hit@3 | Summary size |
+|---|---:|---:|---:|
+| Vane summary (160-token fit) | 19/24 | 22/24 | ~433 chars |
+| Extractive summary (160 tokens at 4 chars/token) | 21/24 | 23/24 | ~573 chars |
+| Full transcript text | 22/24 | 24/24 | whole branch |
+
+The two summary budgets are not equal in characters: Vane counts about 3 characters per token, the extractive fallback 4, so the Vane summaries were about 25% shorter. The Vane tree mapping was changed once after measuring on this same set: dropping a recency salience moved hit@1 from 16/24 to 19/24. So these are not held-out numbers.
+
+**Routed fan-out on the model** (k = 3, Vane summary index)
+
+- The relevant branch was among the 3 tips for 22 of 24 questions (misses: `party-far`, `kitchen-close`).
+- The relevant tip answered correctly for 16 of 24. The oracle, which asks only the known branch, got 18 of 24, so the 0.5B model is the main ceiling, not the router.
+- Mean wall time: 8.5 s per question for 3 parallel answers (contended).
+- Tips served hot 32 times and warm 40 times.
+
+**Compaction v0** (Vane sentence-level fit of each fact branch, prefilled as a new branch; the 24 questions asked on the compacted tip)
+
+| Budget (× source tokens) | Fact kept in the summary | Correct: full branch | Correct: compacted | Lost / gained | Prompt tokens per answer: full / compacted |
+|---|---:|---:|---:|---:|---:|
+| 0.25 | 0/12 | 18/24 | 1/24 | 17 / 0 | 546 / 154 |
+| 0.5 | 0/12 | 18/24 | 1/24 | 17 / 0 | 546 / 255 |
+| 0.75 | 12/12 | 18/24 | 21/24 | 1 / 4 | 546 / 350 |
+
+Read this honestly:
+
+- Vane compaction is extractive. It chooses which turns and sentences to show; it does not paraphrase. Each planted fact is the second sentence of the fourth turn. At 0.25 and 0.5 the fit drops the fact, and the answers fail.
+- At 0.75 every fact survives, and this small model answered more questions correctly from the shorter context than from the full one.
+- The sentence-level tree replaced a turn-level tree after a text-only check on this set: the turn-level tree kept 0 of 12 facts even at 0.75. Like the router number, this is not held out.
+- A real compaction trigger needs a better summary than extraction at low budgets.
+
+Raw results: [`docs/results/managed-tree-cedar-b11719-20261019.json`](docs/results/managed-tree-cedar-b11719-20261019.json) ([.txt](docs/results/managed-tree-cedar-b11719-20261019.txt)).
 
 ## The inspector
 
@@ -182,15 +238,16 @@ Lightning grew out of [Candle](https://github.com/jon-vs-moloch/candle), a brows
 | [`src/backends/`](src/backends) | Fake adapter, `llama.cpp` adapter and `llama-server` process manager |
 | [`src/api/server.ts`](src/api/server.ts) | HTTP API and inspector route |
 | [`public/index.html`](public/index.html) | The inspector (one static file) |
-| [`src/examples/`](src/examples) | `npm run demo`, `npm run demo:ui` and `npm run demo:kv` |
+| [`src/examples/`](src/examples) | `npm run demo`, `npm run demo:ui`, `npm run demo:kv` and `npm run eval:managed` |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | The design |
+| [`docs/MANAGED_TREE.md`](docs/MANAGED_TREE.md) | KV tiers and cleanup, router, compaction, and the maintainer design |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Phases, with current status |
-| [`docs/results/`](docs/results) | Benchmark results, such as the KV-cache run |
+| [`docs/results/`](docs/results) | Benchmark results: the KV-cache run and the managed-tree eval |
 | [`docs/HANDOFF.md`](docs/HANDOFF.md) | The original continuation note |
 
 ## Status
 
-**Early scaffold and design essay.** The architecture is the point; the code is the first slice that makes it runnable. Phases 0 and 1 of the [roadmap](docs/ROADMAP.md) are done and Phase 2 is partly done. Native KV-cache checkpoints exist for `llama.cpp` via llama-server slot files. There is still no persistence and no streaming.
+**Early scaffold and design essay.** The architecture is the point; the code is the first slice that makes it runnable. Phases 0 and 1 of the [roadmap](docs/ROADMAP.md) are done and Phase 2 is partly done. Native KV-cache checkpoints exist for `llama.cpp` via llama-server slot files, and the slot files are managed. A router and a compaction v0 exist and are measured on a small synthetic set. There is still no persistence, no background maintainer and no streaming.
 
 ## License
 

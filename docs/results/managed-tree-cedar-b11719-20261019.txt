@@ -1,0 +1,44 @@
+Vane: installed (@owl-kestrel/vane resolved)
+
+[1] Router hit rate (16 branches, 24 queries)
+  summary+vane         k=1  all 19/24 (79.2%)  close 10/12 (83.3%)  far 9/12 (75.0%)  (summary vane, ~433 chars)
+  summary+vane         k=3  all 22/24 (91.7%)  close 11/12 (91.7%)  far 11/12 (91.7%)  (summary vane, ~433 chars)
+  summary+extractive   k=1  all 21/24 (87.5%)  close 11/12 (91.7%)  far 10/12 (83.3%)  (summary extractive, ~573 chars)
+  summary+extractive   k=3  all 23/24 (95.8%)  close 12/12 (100.0%)  far 11/12 (91.7%)  (summary extractive, ~573 chars)
+  full-text            k=1  all 22/24 (91.7%)  close 11/12 (91.7%)  far 11/12 (91.7%)  (summary extractive, ~573 chars)
+  full-text            k=3  all 24/24 (100.0%)  close 12/12 (100.0%)  far 12/12 (100.0%)  (summary extractive, ~573 chars)
+
+[2] Build 16 branches on llama-server (one cold prefill each)
+  prefill median 523 tokens / 2930.75 ms; ledger 16 files 102859376 B; on disk 16 files 102859376 B; limit filesystem (reserve 403219083 B)
+
+[3] Oracle: ask each question on its known branch
+  correct 18/24 (75.0%); tiers {"hot":15,"warm":9}
+
+[4] Routed fan-out (k=3, summary index)
+  route hit 22/24 (91.7%); answered by relevant tip 16/24 (66.7%); any tip correct 17/24 (70.8%); mean wall 8465.9 ms/query; tiers {"hot":32,"warm":40}
+
+[5] Thermal tiering via manageKv (active: garden, taxes, rustbug, lisbon; 4 hot)
+  decisions {"hot":4,"warm":3,"cold":9}; files 16 -> 7 on disk (102859376 -> 45467760 B)
+  cold branch kitchen: tier cold, prompt_n 532, cache_n 0, 5067.3 ms, correct true
+  garden twice: warm 513.8 ms -> hot 266.8 ms
+
+[6] Compaction drift (budget = 0.25 x source tokens)
+  method {"vane":12}; fact kept in summary 0/12 (0.0%)
+  correct: full 18/24 (75.0%) vs compacted 1/24 (4.2%); agreement 7/24 (29.2%); lost 17, gained 0
+  mean prompt tokens per answer: full 546 vs compacted 154
+
+[6] Compaction drift (budget = 0.5 x source tokens)
+  method {"vane":12}; fact kept in summary 0/12 (0.0%)
+  correct: full 18/24 (75.0%) vs compacted 1/24 (4.2%); agreement 7/24 (29.2%); lost 17, gained 0
+  mean prompt tokens per answer: full 546 vs compacted 255
+
+[6] Compaction drift (budget = 0.75 x source tokens)
+  method {"vane":12}; fact kept in summary 12/12 (100.0%)
+  correct: full 18/24 (75.0%) vs compacted 21/24 (87.5%); agreement 19/24 (79.2%); lost 1, gained 4
+  mean prompt tokens per answer: full 546 vs compacted 350
+
+[7] Operator disk budget: 3 x mean file (19286133 B), 6 branches
+  evicted 4; ledger 2 files 13117344 B; disk 2 files 13117344 B; limit budget 19286133 B
+  oldest branch (garden) after eviction: tier cold, prompt_n 525, cache_n 0, correct true
+
+[8] close: deleted 43 + 2 files; remaining on disk 0 + 0

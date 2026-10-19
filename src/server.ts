@@ -53,9 +53,12 @@ async function main(): Promise<void> {
   }
 
   const runtime = new LightningRuntime();
+  // LLAMA_CPP_SLOT_SAVE_PATH is also the local directory Lightning cleans up,
+  // so it must be the same path on this host as llama-server's --slot-save-path.
   const adapter = new LlamaCppAdapter({
     baseUrl,
-    defaultModelRef: modelRef
+    defaultModelRef: modelRef,
+    slotSaveDir: slotSavePath
   });
   runtime.registerAdapter(adapter);
 
@@ -64,6 +67,15 @@ async function main(): Promise<void> {
   if (kv.mode === "emulated") {
     console.warn(
       "Checkpoints, restore and prefix reuse are EMULATED (message snapshots); start llama-server with --slot-save-path and --parallel N for native KV checkpoints."
+    );
+  } else if (slotSavePath) {
+    const swept = await adapter.sweepOrphanSlotFiles();
+    console.log(
+      `KV slot files: managed in ${slotSavePath}; removed ${swept.deleted.length} left behind by exited Lightning processes`
+    );
+  } else {
+    console.warn(
+      "KV slot files are NOT cleaned up: set LLAMA_CPP_SLOT_SAVE_PATH to llama-server's --slot-save-path on this host."
     );
   }
 
@@ -76,6 +88,8 @@ async function main(): Promise<void> {
 
   const shutdown = async () => {
     server.close();
+    // The branch tree lives in memory, so its KV files are useless after exit.
+    await adapter.close().catch(() => undefined);
     if (managedServer) {
       await managedServer.stop();
     }

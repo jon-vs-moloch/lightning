@@ -15,6 +15,7 @@
     "demo": "npm run build && node dist/examples/in-memory-demo.js",
     "demo:ui": "npm run build && node dist/examples/inspector-demo.js",
     "demo:kv": "npm run build && node dist/examples/kv-cache-demo.js",
+    "eval:managed": "npm run build && node dist/examples/managed-tree-eval.js",
     "serve": "npm run build && node dist/server.js",
     "test": "npm run build && node --test dist/tests/*.js"
   },
