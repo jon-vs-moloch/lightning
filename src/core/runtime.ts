@@ -470,9 +470,11 @@ export class LightningRuntime {
 
   /**
    * Router picks the top-k tips and the query fans out to them in parallel.
-   * persist=false (default) answers ephemerally: each selected branch is restored
-   * to its tip and answered without appending anything, so the branches do not
-   * grow. persist=true uses the persisting fan-out from checkpoints instead.
+   * persist=false (default) answers ephemerally: each selected branch is answered
+   * from its CURRENT head without restoring to a checkpoint or appending
+   * anything, so the branches do not change (no post-checkpoint messages are
+   * dropped); `checkpointId` in each answer is the routed tip. persist=true uses
+   * the persisting fan-out from checkpoints instead.
    * Returns the route, the summaries used, and the per-branch answers.
    */
   async fanOutRouted(
@@ -525,9 +527,6 @@ export class LightningRuntime {
       };
     }
 
-    await Promise.all(
-      route.map((entry) => this.restoreBranch(entry.branchId, entry.checkpointId))
-    );
     const answers = await Promise.all(
       route.map(async (entry) => ({
         branchId: entry.branchId,

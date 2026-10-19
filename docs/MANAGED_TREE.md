@@ -34,11 +34,12 @@ The adapter keeps a ledger ([`src/core/kv_cache.ts`](../src/core/kv_cache.ts)) o
 
 - A new save replaces the branch's previous file. The old file is deleted at once unless a checkpoint or a fork still holds it.
 - `close()` deletes every file the adapter still owns. The branch store is in memory, so the files are useless after the process ends.
-- The API server calls `close()` on SIGINT and SIGTERM. At startup it sweeps files left by Lightning processes that are no longer running (`sweepOrphanSlotFiles`, same host only).
+- The API server calls `close()` on SIGINT and SIGTERM. At startup it sweeps files that Lightning processes on this host left behind after they stopped running (`sweepOrphanSlotFiles`). Files tagged with another host, or named in the older format without a host tag, are never touched.
+- Deleting a branch releases its head file and its checkpoints' files. The checkpoint snapshots stay inspectable as text.
 
 llama-server has no delete action. Files can only be deleted through the local path behind `--slot-save-path`. The adapter therefore needs `slotSaveDir` (`LLAMA_CPP_SLOT_SAVE_PATH` for the API server) pointing at that directory on the same host. Without it, cleanup is reported as disabled and nothing is deleted.
 
-File names are `lightning-<pid>-<8 random hex>-<branch>-<n>.bin`. Two Lightning processes sharing one llama-server can no longer overwrite each other's files.
+File names are `lightning-<host tag>-<pid>-<8 random hex>-<branch>-<n>.bin`, where the host tag is the first 8 hex characters of sha256(hostname). Two Lightning processes sharing one llama-server can no longer overwrite each other's files, even from different hosts sharing one directory.
 
 ### The disk limit
 
@@ -47,6 +48,7 @@ The harm being prevented is disk exhaustion: a full disk fails llama-server's ne
 - **Reserve.** Keep enough free space for every slot to save a full context: `slots × n_ctx per slot × bytes per token`. The bytes per token come from the save responses Lightning has seen, and n_ctx from `GET /props`. Example: on the Cedar setup that is 4 × 8,192 × about 12.3 KB, about 400 MB.
 - **Filesystem bound.** Lightning's own files may use whatever the filesystem has free beyond that reserve. They count as reclaimable, because evicting them frees the space.
 - **Operator budget.** An operator can set `kvDiskBudgetBytes` as a tighter ceiling. The default has no budget and no other cap.
+- **Before the first save** the bytes per token are unknown, so the reserve is 0 and only the operator budget applies. Eviction runs after each save anyway, so the first save is never the one checked; from the second save on, the measured reserve applies.
 
 After every save, the adapter computes the limit (`kvCacheReport().limit` says which bound applied). If it is over, it evicts files coldest first:
 

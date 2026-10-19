@@ -1,4 +1,5 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
+import * as os from "node:os";
 import { join } from "node:path";
 import * as fsp from "node:fs/promises";
 import {
@@ -71,12 +72,23 @@ const defaultLlamaCppFs: LlamaCppFs = {
 };
 
 /**
- * Per-process file prefix (`lightning-<pid>-<8 hex>`), so two Lightning
- * processes sharing one llama-server never overwrite each other's slot files.
+ * First 8 hex chars of sha256(hostname): identifies the host a slot file was
+ * created on, so a slot directory shared across hosts can tell apart files of
+ * processes running on different machines.
+ */
+export function hostTag(): string {
+  return createHash("sha256").update(os.hostname()).digest("hex").slice(0, 8);
+}
+
+/**
+ * Per-host, per-process file prefix (`lightning-<8 hex host>-<pid>-<8 hex>`), so
+ * two Lightning processes sharing one llama-server — even on different hosts
+ * sharing one directory — never overwrite each other's slot files, and the
+ * orphan sweep only ever touches same-host files.
  * An explicit `slotFilePrefix` option still wins.
  */
 export function defaultSlotFilePrefix(): string {
-  return `lightning-${process.pid}-${randomBytes(4).toString("hex")}`;
+  return `lightning-${hostTag()}-${process.pid}-${randomBytes(4).toString("hex")}`;
 }
 
 /** Coerce llama-server save-response numbers; missing/NaN counts as 0. */
@@ -431,6 +443,17 @@ export class LlamaCppAdapter implements LightningAdapter {
       await this.setBranchKv(state, undefined);
     }
     this.branches.delete(branchId);
+    // Checkpoint snapshots stay inspectable by the store, but they no longer
+    // hold on to their KV files: release (and delete when freed) each one.
+    for (const snapshot of this.checkpoints.values()) {
+      if (snapshot.checkpoint.branchId !== branchId || snapshot.kvFile === undefined) {
+        continue;
+      }
+      await this.deleteFiles(
+        this.releaseHolder(snapshot.kvFile, "ckpt:" + snapshot.checkpoint.id)
+      );
+      snapshot.kvFile = undefined;
+    }
   }
 
   async appendMessages(branchId: string, messages: MessageRecord[]): Promise<void> {
@@ -787,9 +810,11 @@ export class LlamaCppAdapter implements LightningAdapter {
 
   /**
    * Same-host only: deletes slot files in `slotSaveDir` named
-   * `lightning-<pid>-<8 hex>-...bin` whose pid is neither this process nor a
-   * live process on this host (left behind by a crashed or restarted
-   * Lightning). Returns { deleted: [] } when slotSaveDir is unset.
+   * `lightning-<8 hex host>-<pid>-<8 hex>-...bin` whose host tag is this host and
+   * whose pid is neither this process nor a live process on this host (left
+   * behind by a crashed or restarted Lightning). Files created by other hosts
+   * sharing the directory, and files in the old pid-only format, are never
+   * deleted. Returns { deleted: [] } when slotSaveDir is unset.
    */
   async sweepOrphanSlotFiles(): Promise<{ deleted: string[] }> {
     if (this.slotSaveDir === undefined) {
@@ -799,9 +824,10 @@ export class LlamaCppAdapter implements LightningAdapter {
     const deleted: string[] = [];
     const entries = await this.fs.readdir(this.slotSaveDir);
     for (const entry of entries) {
-      const match = /^lightning-(\d+)-[0-9a-f]{8}-.+\.bin$/.exec(entry);
+      const match = /^lightning-([0-9a-f]{8})-(\d+)-[0-9a-f]{8}-.+\.bin$/.exec(entry);
       if (!match) continue;
-      const pid = Number.parseInt(match[1], 10);
+      if (match[1] !== hostTag()) continue;
+      const pid = Number.parseInt(match[2], 10);
       if (pid === process.pid || pidAlive(pid)) continue;
 
       try {
@@ -861,97 +887,100 @@ export class LlamaCppAdapter implements LightningAdapter {
     if (previousKvFile !== undefined) {
       this.kvInUse.set(previousKvFile, (this.kvInUse.get(previousKvFile) ?? 0) + 1);
     }
-    // Hot tier: prefer an idle slot that still holds this branch's KV.
-    const slot = await this.acquireSlot(previousKvFile);
-    let residentHit = false;
-    let restored = false;
-    let restoreFailed: { file: string; status: number } | undefined;
     try {
-      if (
-        this.slotAffinity &&
-        previousKvFile !== undefined &&
-        this.slotResident.get(slot) === previousKvFile
-      ) {
-        residentHit = true;
-        this.kvCounters.residentHits++;
-        this.ledger.touch(previousKvFile);
-      } else {
-        this.slotResident.delete(slot);
-        if (previousKvFile !== undefined) {
-          // Warm tier: load the saved slot file.
-          this.kvCounters.restores++;
-          const restoreResponse = await this.postJson(`/slots/${slot}?action=restore`, {
-            filename: previousKvFile
+      // Hot tier: prefer an idle slot that still holds this branch's KV.
+      const slot = await this.acquireSlot(previousKvFile);
+      let residentHit = false;
+      let restored = false;
+      let restoreFailed: { file: string; status: number } | undefined;
+      try {
+        if (
+          this.slotAffinity &&
+          previousKvFile !== undefined &&
+          this.slotResident.get(slot) === previousKvFile
+        ) {
+          residentHit = true;
+          this.kvCounters.residentHits++;
+          this.ledger.touch(previousKvFile);
+        } else {
+          this.slotResident.delete(slot);
+          if (previousKvFile !== undefined) {
+            // Warm tier: load the saved slot file.
+            this.kvCounters.restores++;
+            const restoreResponse = await this.postJson(`/slots/${slot}?action=restore`, {
+              filename: previousKvFile
+            });
+            if (restoreResponse.ok) {
+              restored = true;
+              this.slotResident.set(slot, previousKvFile);
+              this.ledger.touch(previousKvFile);
+            } else {
+              // The file is a derived cache: forget it, check whether the server's
+              // build/model changed, and answer from the canonical transcript.
+              this.kvCounters.restoreFailures++;
+              restoreFailed = { file: previousKvFile, status: restoreResponse.status };
+              await this.dropKvFile(previousKvFile, "restore-failed");
+              await this.checkKvFingerprint();
+            }
+          }
+          if (!restored) {
+            // Cold tier (or failed restore): start from an empty slot.
+            const eraseResponse = await this.postJson(`/slots/${slot}?action=erase`, {});
+            if (!eraseResponse.ok) {
+              throw new Error(`llama.cpp slot erase failed with HTTP ${eraseResponse.status}`);
+            }
+          }
+        }
+
+        const payload = await this.requestChatCompletion(
+          state.branch,
+          messages,
+          request,
+          slot
+        );
+
+        let savedTo: string | undefined;
+        if (persistKv) {
+          const safeBranchId = state.branch.id.replace(/[^A-Za-z0-9_-]/g, "_");
+          const filename = `${this.slotFilePrefix}-${safeBranchId}-${++this.fileCounter}.bin`;
+          const saveResponse = await this.postJson(`/slots/${slot}?action=save`, {
+            filename
           });
-          if (restoreResponse.ok) {
-            restored = true;
-            this.slotResident.set(slot, previousKvFile);
-            this.ledger.touch(previousKvFile);
-          } else {
-            // The file is a derived cache: forget it, check whether the server's
-            // build/model changed, and answer from the canonical transcript.
-            this.kvCounters.restoreFailures++;
-            restoreFailed = { file: previousKvFile, status: restoreResponse.status };
-            await this.dropKvFile(previousKvFile, "restore-failed");
-            await this.checkKvFingerprint();
+          if (!saveResponse.ok) {
+            throw new Error(`llama.cpp slot save failed with HTTP ${saveResponse.status}`);
           }
-        }
-        if (!restored) {
-          // Cold tier (or failed restore): start from an empty slot.
-          const eraseResponse = await this.postJson(`/slots/${slot}?action=erase`, {});
-          if (!eraseResponse.ok) {
-            throw new Error(`llama.cpp slot erase failed with HTTP ${eraseResponse.status}`);
-          }
-        }
-      }
 
-      const payload = await this.requestChatCompletion(
-        state.branch,
-        messages,
-        request,
-        slot
-      );
+          const saved = (await saveResponse.json()) as { n_saved?: unknown; n_written?: unknown };
+          this.ledger.add(filename, kvNumber(saved.n_written), kvNumber(saved.n_saved));
+          this.kvCounters.saved++;
+          await this.setBranchKv(state, filename);
+          state.lastTimings = payload.timings;
+          savedTo = filename;
+          this.slotResident.set(slot, filename);
+          await this.enforceKvBudget(new Set([filename, ...this.kvInUse.keys()]));
+        } else if (residentHit || restored) {
+          // An ephemeral suffix now follows the branch's saved tokens in the slot.
+          // The saved prefix is intact and llama-server reuses only the common
+          // prefix, so the slot still serves this branch without a restore.
+          this.slotResident.set(slot, previousKvFile as string);
+        } else {
+          this.slotResident.delete(slot);
+        }
 
-      let savedTo: string | undefined;
-      if (persistKv) {
-        const safeBranchId = state.branch.id.replace(/[^A-Za-z0-9_-]/g, "_");
-        const filename = `${this.slotFilePrefix}-${safeBranchId}-${++this.fileCounter}.bin`;
-        const saveResponse = await this.postJson(`/slots/${slot}?action=save`, {
-          filename
+        return this.buildGenerateResult(state.branch, payload, {
+          mode: "native",
+          slot,
+          tier: residentHit ? "hot" : restored ? "warm" : "cold",
+          residentHit,
+          ...(restored && previousKvFile !== undefined ? { restoredFrom: previousKvFile } : {}),
+          ...(restoreFailed === undefined ? {} : { restoreFailed }),
+          ...(savedTo === undefined ? {} : { savedTo }),
+          timings: payload.timings
         });
-        if (!saveResponse.ok) {
-          throw new Error(`llama.cpp slot save failed with HTTP ${saveResponse.status}`);
-        }
-
-        const saved = (await saveResponse.json()) as { n_saved?: unknown; n_written?: unknown };
-        this.ledger.add(filename, kvNumber(saved.n_written), kvNumber(saved.n_saved));
-        this.kvCounters.saved++;
-        await this.setBranchKv(state, filename);
-        state.lastTimings = payload.timings;
-        savedTo = filename;
-        this.slotResident.set(slot, filename);
-        await this.enforceKvBudget(new Set([filename, ...this.kvInUse.keys()]));
-      } else if (residentHit || restored) {
-        // An ephemeral suffix now follows the branch's saved tokens in the slot.
-        // The saved prefix is intact and llama-server reuses only the common
-        // prefix, so the slot still serves this branch without a restore.
-        this.slotResident.set(slot, previousKvFile as string);
-      } else {
-        this.slotResident.delete(slot);
+      } finally {
+        this.releaseSlot(slot);
       }
-
-      return this.buildGenerateResult(state.branch, payload, {
-        mode: "native",
-        slot,
-        tier: residentHit ? "hot" : restored ? "warm" : "cold",
-        residentHit,
-        ...(restored && previousKvFile !== undefined ? { restoredFrom: previousKvFile } : {}),
-        ...(restoreFailed === undefined ? {} : { restoreFailed }),
-        ...(savedTo === undefined ? {} : { savedTo }),
-        timings: payload.timings
-      });
     } finally {
-      this.releaseSlot(slot);
       if (previousKvFile !== undefined) {
         const left = (this.kvInUse.get(previousKvFile) ?? 1) - 1;
         if (left > 0) this.kvInUse.set(previousKvFile, left);

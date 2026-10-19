@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import type { ServerResponse } from "node:http";
 
-import { LlamaCppAdapter } from "../backends/llama_cpp.js";
+import { LlamaCppAdapter, hostTag } from "../backends/llama_cpp.js";
 import type { LlamaCppFs } from "../backends/llama_cpp.js";
 import { createBranchRecord } from "../core/branch.js";
 import { KvFileLedger, computeKvDiskLimit, kvReserveBytes, tierRank } from "../core/kv_cache.js";
@@ -185,7 +185,7 @@ test("slot files are named per process and the probe file is deleted", async () 
     const b = await nativeAdapter(fake, fs);
     const prefixA = String(a.kvCacheReport().slotFilePrefix);
     const prefixB = String(b.kvCacheReport().slotFilePrefix);
-    assert.match(prefixA, new RegExp(`^lightning-${process.pid}-[0-9a-f]{8}$`));
+    assert.match(prefixA, new RegExp(`^lightning-${hostTag()}-${process.pid}-[0-9a-f]{8}$`));
     assert.notEqual(prefixA, prefixB);
     assert.ok(fs.unlinked.includes(`${prefixA}-probe.bin`));
 
@@ -372,18 +372,42 @@ test("a refused slot erase is an error, not a silent continue (F-02)", async () 
   }
 });
 
-test("orphan sweep deletes only files of dead Lightning processes", async () => {
+test("orphan sweep deletes only this host's files of dead Lightning processes", async () => {
   const fake = await startFake(1);
   try {
     const fs = fakeFs();
     const adapter = await nativeAdapter(fake, fs);
-    const dead = "lightning-2147483646-0badc0de-t-1.bin";
-    const mine = `lightning-${process.pid}-0badc0de-t-1.bin`;
-    fs.dir.push(dead, mine, "someone-else.bin");
+    const host = hostTag();
+    const otherHost = host === "00000000" ? "11111111" : "00000000";
+    const dead = `lightning-${host}-2147483646-0badc0de-t-1.bin`;
+    const mine = `lightning-${host}-${process.pid}-0badc0de-t-1.bin`;
+    const remote = `lightning-${otherHost}-2147483646-0badc0de-t-1.bin`;
+    const oldFormat = "lightning-2147483646-0badc0de-t-1.bin";
+    fs.dir.push(dead, mine, remote, oldFormat, "someone-else.bin");
     fs.unlinked.length = 0;
     const swept = await adapter.sweepOrphanSlotFiles();
     assert.deepEqual(swept.deleted, [dead]);
     assert.deepEqual(fs.unlinked, [dead]);
+  } finally {
+    await fake.close();
+  }
+});
+
+test("deleting a branch releases its head and checkpoint files", async () => {
+  const fake = await startFake(1);
+  try {
+    const fs = fakeFs();
+    const adapter = await nativeAdapter(fake, fs);
+    await adapter.createBranch(branch("t"));
+    await adapter.appendMessages("t", [{ role: "user", content: "hi", createdAt: "" }]);
+    const atCheckpoint = kvOf(await adapter.generate("t", {})).savedTo;
+    await adapter.checkpointBranch("t");
+    const head = kvOf(await adapter.generate("t", {})).savedTo;
+    assert.equal(adapter.kvCacheReport().files, 2);
+
+    await adapter.deleteBranch("t");
+    assert.ok(fs.unlinked.includes(atCheckpoint) && fs.unlinked.includes(head));
+    assert.equal(adapter.kvCacheReport().files, 0);
   } finally {
     await fake.close();
   }

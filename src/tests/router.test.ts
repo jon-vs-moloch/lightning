@@ -114,6 +114,13 @@ test("fanOutRouted answers only the routed tips and does not grow branches", asy
   assert.equal(result.summaries.garden.method, "extractive");
   assert.equal(runtime.getMessages("garden").length, before, "ephemeral fan-out leaves the branch as it was");
 
+  // Messages appended after the last checkpoint are canonical text: an
+  // ephemeral routed answer must not rewind them (review F-01 of 88b905e9).
+  await runtime.appendMessages("garden", [{ role: "user", content: "Also mulch the drip line." }]);
+  const withTail = runtime.getMessages("garden").length;
+  await runtime.fanOutRouted("drip timer mulch", 1, {}, { vane: null });
+  assert.equal(runtime.getMessages("garden").length, withTail, "uncheckpointed messages survive");
+
   const persisted = await runtime.fanOutRouted("serpentine belt", 1, {}, { vane: null, persist: true });
   assert.deepEqual(persisted.route.map((r) => r.branchId), ["car"]);
   assert.ok(persisted.answers[0].checkpoint, "persist=true checkpoints the answer");
